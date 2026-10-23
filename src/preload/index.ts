@@ -24,6 +24,9 @@ const api: IElectronAPI = {
   pausePipeline: () => ipcRenderer.invoke('pipeline:pause'),
   resumePipeline: () => ipcRenderer.invoke('pipeline:resume'),
 
+  approveDecisionPacket: () => ipcRenderer.invoke('pipeline:approve-packet'),
+  rejectDecisionPacket: () => ipcRenderer.invoke('pipeline:reject-packet'),
+
   openProviderLogin: (providerId: ProviderId) => ipcRenderer.invoke('provider:open-login', providerId),
   checkProviderStatus: (providerId: ProviderId) => ipcRenderer.invoke('provider:check-status', providerId),
   sendProviderPrompt: (providerId: ProviderId, prompt: string) => {

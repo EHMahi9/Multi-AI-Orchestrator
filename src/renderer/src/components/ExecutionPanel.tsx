@@ -7,6 +7,8 @@ interface ExecutionPanelProps {
   onClearLogs: () => void;
   onOpenLogin?: (id: ProviderId) => void;
   onCheckStatus?: (id: ProviderId) => void;
+  onApprovePacket?: () => void;
+  onRejectPacket?: () => void;
 }
 
 type TabKey = 'decision' | 'evidence' | 'review' | 'terminal';
@@ -17,6 +19,8 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
   onClearLogs,
   onOpenLogin,
   onCheckStatus,
+  onApprovePacket,
+  onRejectPacket,
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('terminal');
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
@@ -59,33 +63,117 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
 
       <div className="tab-content">
         {activeTab === 'decision' && (
-          <div className="card antigravity">
+          <div className="card antigravity" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 290px)' }}>
             {session.decisionPacket ? (
               <>
-                <h3 style={{ fontSize: '15px', marginBottom: '8px' }}>
-                  # DECISION PACKET: {session.decisionPacket.title}
-                </h3>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                {session.stage === 'awaiting_confirmation' && (
+                  <div style={{ background: '#1c1917', border: '1px solid #eab308', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h4 style={{ color: '#facc15', fontSize: '13px', fontWeight: 700 }}>
+                          ⚠️ User Approval Checkpoint Required (Milestone 3 Exit Gate)
+                        </h4>
+                        <p style={{ color: '#cbd5e1', fontSize: '12px', marginTop: '4px' }}>
+                          Cross-model consensus complete. Review the agreed tasks below before approving.
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          style={{ background: '#16a34a', borderColor: '#22c55e', color: '#fff', fontSize: '11px', padding: '6px 12px' }}
+                          onClick={onApprovePacket}
+                        >
+                          ✔ Approve Decision Packet
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger"
+                          style={{ fontSize: '11px', padding: '6px 12px' }}
+                          onClick={onRejectPacket}
+                        >
+                          ✖ Reject / Revise
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {session.decisionPacket.approvedByUser && (
+                  <div style={{ background: '#052e16', border: '1px solid #16a34a', borderRadius: '6px', padding: '8px 12px', marginBottom: '14px', color: '#4ade80', fontSize: '12px' }}>
+                    ✔ <strong>Decision Packet Approved by User.</strong> (Milestone 3 Exit Gate: Local CLI execution remains paused until Milestone 4).
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+                  <h3 style={{ fontSize: '16px', color: '#f8fafc' }}>
+                    # {session.decisionPacket.title}
+                  </h3>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                    Schema v{session.decisionPacket.version}
+                  </span>
+                </div>
+
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '14px', fontSize: '12.5px', lineHeight: 1.5 }}>
                   {session.decisionPacket.summary}
                 </p>
-                <h4 style={{ color: 'var(--accent-antigravity)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px' }}>
-                  Agreed Architecture:
+
+                <h4 style={{ color: 'var(--accent-antigravity)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>
+                  Agreed Architectural Decisions:
                 </h4>
-                <ul style={{ paddingLeft: '18px', marginBottom: '12px', color: '#e2e8f0' }}>
+                <ul style={{ paddingLeft: '18px', marginBottom: '14px', color: '#e2e8f0', fontSize: '12px', lineHeight: 1.5 }}>
                   {session.decisionPacket.decisions.map((d, i) => (
                     <li key={i}>{d}</li>
                   ))}
                 </ul>
-                <h4 style={{ color: 'var(--accent-antigravity)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px' }}>
+
+                <h4 style={{ color: 'var(--accent-antigravity)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>
                   Implementation Tasks:
                 </h4>
-                <ul style={{ paddingLeft: '18px', marginBottom: '12px', color: '#e2e8f0' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
                   {session.decisionPacket.tasks.map((t) => (
-                    <li key={t.id}>
-                      <strong>{t.title}</strong> (Files: {t.files.join(', ')})
-                    </li>
+                    <div key={t.id} style={{ background: '#0a0d12', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <strong style={{ color: '#60a5fa', fontSize: '12px' }}>[{t.id}] {t.title}</strong>
+                        {t.testCommand && (
+                          <span style={{ background: '#1e293b', padding: '1px 6px', borderRadius: '4px', fontSize: '10px', fontFamily: 'monospace', color: '#cbd5e1' }}>
+                            {t.testCommand}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '11.5px', color: '#94a3b8', marginBottom: '4px' }}>{t.description}</p>
+                      <div style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                        Target files: <code>{t.files.join(', ')}</code>
+                      </div>
+                    </div>
                   ))}
-                </ul>
+                </div>
+
+                {session.decisionPacket.criteria && session.decisionPacket.criteria.length > 0 && (
+                  <>
+                    <h4 style={{ color: 'var(--accent-antigravity)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>
+                      Acceptance Criteria:
+                    </h4>
+                    <ul style={{ paddingLeft: '18px', marginBottom: '14px', color: '#e2e8f0', fontSize: '12px', lineHeight: 1.5 }}>
+                      {session.decisionPacket.criteria.map((c, i) => (
+                        <li key={i}>{c}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {session.decisionPacket.unresolvedRisks && session.decisionPacket.unresolvedRisks.length > 0 && (
+                  <>
+                    <h4 style={{ color: '#f87171', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>
+                      Unresolved Risks & Notes:
+                    </h4>
+                    <ul style={{ paddingLeft: '18px', marginBottom: '14px', color: '#fca5a5', fontSize: '12px', lineHeight: 1.5 }}>
+                      {session.decisionPacket.unresolvedRisks.map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </>
             ) : (
               <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', padding: '24px', textAlign: 'center' }}>

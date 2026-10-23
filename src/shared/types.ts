@@ -50,7 +50,21 @@ export interface DecisionPacket {
   tasks: DecisionTask[];
   criteria: string[];
   unresolvedRisks: string[];
+  consensusTimestamp?: string;
+  approvedByUser?: boolean;
   rawText?: string;
+}
+
+export interface ConsensusTurn {
+  turnNumber: number;
+  providerId: ProviderId;
+  role: string;
+  prompt: string;
+  response: string;
+  timestamp: string;
+  durationMs: number;
+  status: 'pending' | 'success' | 'error' | 'skipped';
+  error?: string;
 }
 
 export interface ExecutionEvidence {
@@ -81,6 +95,7 @@ export interface OrchestratorSessionState {
   selectedProviders: Record<ProviderId, boolean>;
   providerStates: Record<ProviderId, ProviderState>;
   decisionPacket: DecisionPacket | null;
+  consensusTurns: ConsensusTurn[];
   evidence: ExecutionEvidence | null;
   reviewVerdict: ReviewVerdict | null;
   reviewIteration: number;
@@ -118,6 +133,8 @@ export interface IElectronAPI {
   resumePipeline: () => Promise<{ ok: boolean }>;
   onStateChange: (callback: (state: OrchestratorSessionState) => void) => () => void;
   onLogChunk: (callback: (chunk: string) => void) => () => void;
+  approveDecisionPacket: () => Promise<{ ok: boolean }>;
+  rejectDecisionPacket: () => Promise<{ ok: boolean }>;
   openProviderLogin: (providerId: ProviderId) => Promise<boolean>;
   checkProviderStatus: (providerId: ProviderId) => Promise<ProviderState>;
   sendProviderPrompt: (

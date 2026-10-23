@@ -3,11 +3,13 @@ import path from 'path';
 import { exec } from 'child_process';
 import { setupWindowSecurity, validateWorkspacePath } from './security';
 import { ProviderSessionManager } from './providers/manager';
+import { ConsensusOrchestrator } from './consensus/orchestrator';
 import type { AppMetadata, OrchestratorSessionState, ProviderId, ProviderState } from '../shared/types';
 
 let mainWindow: BrowserWindow | null = null;
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const providerManager = new ProviderSessionManager();
+let currentOrchestrator: ConsensusOrchestrator | null = null;
 
 // Initial session state
 let sessionState: OrchestratorSessionState = {
@@ -29,6 +31,7 @@ let sessionState: OrchestratorSessionState = {
     claude: { id: 'claude', name: 'Claude (Auditor)', enabled: false, status: 'disabled', quotaProtected: true },
   },
   decisionPacket: null,
+  consensusTurns: [],
   evidence: null,
   reviewVerdict: null,
   reviewIteration: 0,
@@ -189,31 +192,92 @@ ipcMain.handle('pipeline:start', async (_event, params: {
     return { ok: false, error: wsCheck.error };
   }
 
-  // Update session state for Milestone 1 Scaffold demonstration
   sessionState.running = true;
   sessionState.paused = false;
   sessionState.stage = 'preflight';
   sessionState.idea = params.idea.trim();
   sessionState.workspace = wsCheck.normalized!;
   sessionState.selectedProviders = params.providers;
+  sessionState.consensusTurns = [];
+  sessionState.decisionPacket = null;
   sessionState.maxRetries = params.maxRetries || 3;
-  sessionState.reviewIteration = 1;
-
   broadcastState();
-  broadcastLog(`[Milestone 1 Scaffold] Pipeline started for goal: "${sessionState.idea}"\n`);
-  broadcastLog(`[Workspace] Verified target directory: ${sessionState.workspace}\n`);
-  broadcastLog(`[CLI Preflight] Active agent binary: ${sessionState.cliTool.name} (v${sessionState.cliTool.version})\n`);
-  broadcastLog(`[Notice] Full multi-AI session execution and Antigravity handoff will activate in Milestones 2-5.\n\n`);
+
+  currentOrchestrator = new ConsensusOrchestrator();
+
+  // Execute consensus pipeline asynchronously without blocking IPC return
+  (async () => {
+    try {
+      const result = await currentOrchestrator!.run({
+        idea: sessionState.idea,
+        workspace: sessionState.workspace,
+        selectedProviders: sessionState.selectedProviders,
+        providerManager,
+        onLog: (chunk) => broadcastLog(chunk),
+        onTurnUpdate: (turn) => {
+          const idx = sessionState.consensusTurns.findIndex((t) => t.turnNumber === turn.turnNumber);
+          if (idx !== -1) {
+            sessionState.consensusTurns[idx] = turn;
+          } else {
+            sessionState.consensusTurns.push(turn);
+          }
+          broadcastState();
+        },
+        onStageChange: (stage) => {
+          sessionState.stage = stage;
+          broadcastState();
+        },
+      });
+
+      if (result.ok && result.packet) {
+        sessionState.decisionPacket = result.packet;
+        sessionState.stage = 'awaiting_confirmation';
+      } else {
+        sessionState.stage = result.stage;
+        sessionState.running = false;
+      }
+    } catch (err: any) {
+      sessionState.stage = 'failed';
+      sessionState.running = false;
+      broadcastLog(`\n[Fatal Error in Pipeline] ${err.message}\n`);
+    } finally {
+      broadcastState();
+    }
+  })();
 
   return { ok: true };
 });
 
 ipcMain.handle('pipeline:stop', async () => {
+  if (currentOrchestrator) {
+    currentOrchestrator.abort();
+  }
   sessionState.running = false;
   sessionState.paused = false;
   sessionState.stage = 'cancelled';
   broadcastState();
   broadcastLog(`\n[Pipeline] Stopped by user request.\n`);
+  return { ok: true };
+});
+
+ipcMain.handle('pipeline:approve-packet', async () => {
+  if (sessionState.decisionPacket) {
+    sessionState.decisionPacket.approvedByUser = true;
+    sessionState.stage = 'completed';
+    sessionState.running = false;
+    broadcastState();
+    broadcastLog(`\n[Decision Packet Approved] User confirmed architecture and tasks.\n`);
+    broadcastLog(`[Milestone 3 Safety Guard] Execution and correction loops remain paused until Milestone 4.\n`);
+    return { ok: true };
+  }
+  return { ok: false, error: 'No Decision Packet available to approve.' };
+});
+
+ipcMain.handle('pipeline:reject-packet', async () => {
+  sessionState.stage = 'cancelled';
+  sessionState.running = false;
+  broadcastState();
+  broadcastLog(`\n[Decision Packet Rejected] User requested revision. Adjust goal in Mission Control and rerun.\n`);
   return { ok: true };
 });
 

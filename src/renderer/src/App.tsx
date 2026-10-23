@@ -24,6 +24,7 @@ const defaultSession: OrchestratorSessionState = {
     claude: { id: 'claude', name: 'Claude (Auditor)', enabled: false, status: 'ready', quotaProtected: true },
   },
   decisionPacket: null,
+  consensusTurns: [],
   evidence: null,
   reviewVerdict: null,
   reviewIteration: 0,
@@ -135,6 +136,18 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleApprovePacket = async () => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      await window.electronAPI.approveDecisionPacket();
+    }
+  };
+
+  const handleRejectPacket = async () => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      await window.electronAPI.rejectDecisionPacket();
+    }
+  };
+
   return (
     <>
       <Titlebar session={session} onOpenLogin={handleOpenLogin} />
@@ -162,6 +175,8 @@ export const App: React.FC = () => {
           onClearLogs={() => setLogs('')}
           onOpenLogin={handleOpenLogin}
           onCheckStatus={handleCheckStatus}
+          onApprovePacket={handleApprovePacket}
+          onRejectPacket={handleRejectPacket}
         />
       </main>
     </>
