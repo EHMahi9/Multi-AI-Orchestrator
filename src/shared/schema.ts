@@ -1,9 +1,49 @@
+import crypto from 'node:crypto';
 import type { DecisionPacket, DecisionTask } from './types';
 
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
   packet?: DecisionPacket;
+}
+
+/**
+ * Computes a deterministic SHA-256 fingerprint of a DecisionPacket's execution-relevant fields.
+ * Any alteration to title, summary, decisions, tasks (id, title, files, description, testCommand),
+ * criteria, or unresolved risks changes this hash.
+ */
+export function computeDecisionPacketHash(packet: DecisionPacket): string {
+  if (!packet || typeof packet !== 'object') {
+    throw new Error('Cannot hash invalid or null DecisionPacket.');
+  }
+
+  // Canonicalize fields deterministically
+  const canonical = {
+    version: packet.version || '1.0',
+    title: (packet.title || '').trim(),
+    summary: (packet.summary || '').trim(),
+    decisions: Array.isArray(packet.decisions)
+      ? packet.decisions.map((d) => String(d).trim())
+      : [],
+    tasks: Array.isArray(packet.tasks)
+      ? packet.tasks.map((t) => ({
+          id: String(t.id || '').trim(),
+          title: String(t.title || '').trim(),
+          files: Array.isArray(t.files) ? t.files.map((f) => String(f).trim()).sort() : [],
+          description: String(t.description || '').trim(),
+          testCommand: t.testCommand ? String(t.testCommand).trim() : null,
+        }))
+      : [],
+    criteria: Array.isArray(packet.criteria)
+      ? packet.criteria.map((c) => String(c).trim())
+      : [],
+    unresolvedRisks: Array.isArray(packet.unresolvedRisks)
+      ? packet.unresolvedRisks.map((r) => String(r).trim())
+      : [],
+  };
+
+  const serialized = JSON.stringify(canonical);
+  return crypto.createHash('sha256').update(serialized, 'utf8').digest('hex');
 }
 
 /**
@@ -135,7 +175,9 @@ export function validateDecisionPacket(input: unknown): ValidationResult {
     criteria: Array.isArray(data.criteria) ? data.criteria.map((c: any) => String(c).trim()) : [],
     unresolvedRisks: Array.isArray(data.unresolvedRisks) ? data.unresolvedRisks.map((r: any) => String(r).trim()) : [],
     consensusTimestamp: data.consensusTimestamp || new Date().toISOString(),
-    approvedByUser: false,
+    approvedByUser: Boolean(data.approvedByUser),
+    approvalSignature: typeof data.approvalSignature === 'string' ? data.approvalSignature : undefined,
+    approvedWorkspace: typeof data.approvedWorkspace === 'string' ? data.approvedWorkspace : undefined,
     rawText: data.rawText,
   };
 

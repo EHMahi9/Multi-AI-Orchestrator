@@ -6,6 +6,7 @@ import os from 'node:os';
 import { execSync } from 'node:child_process';
 import { ExecutionService } from '../dist-electron/main/execution/engine.js';
 import { validateAndCanonicalizeWorkspace, isCommandPolicyCompliant } from '../dist-electron/main/execution/policy.js';
+import { computeDecisionPacketHash } from '../dist-electron/shared/schema.js';
 
 // Setup isolated temporary workspace in os.tmpdir()
 const tempWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'orchestrator-audit-ws-'));
@@ -97,6 +98,8 @@ test('Integration Audit 4: Execution in isolated temp workspace collects evidenc
     consensusTimestamp: new Date().toISOString(),
     approvedByUser: true,
   };
+
+  approvedPacket.approvalSignature = computeDecisionPacketHash(approvedPacket);
 
   // Prevent parent node:test context recursion warning
   delete process.env.NODE_TEST_CONTEXT;

@@ -2,21 +2,35 @@ import { spawn, exec, ChildProcess } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { CliResolver, CliInfo } from './cli-resolver';
-import { validateAndCanonicalizeWorkspace, isCommandPolicyCompliant } from './policy';
-import { validateDecisionPacket } from '../../shared/schema';
+import { validateAndCanonicalizeWorkspace, parseAndValidateCommand } from './policy';
+import { validateDecisionPacket, computeDecisionPacketHash } from '../../shared/schema';
 import type { DecisionPacket, DecisionTask, ExecutionEvidence } from '../../shared/types';
 
 export interface ExecutionOptions {
   decisionPacket: DecisionPacket;
   workspace: string;
   cliResolver?: CliResolver;
+  timeoutMs?: number; // Configurable execution timeout (default: 300_000 ms / 5 min)
   onLog: (chunk: string) => void;
   onTaskStart?: (task: DecisionTask, index: number, total: number) => void;
+}
+
+/**
+ * Safely formats an argument for Windows cmd.exe /s /c invocation.
+ * Wraps arguments containing spaces or quotes in double quotes and escapes internal quotes.
+ */
+function quoteCmdArg(arg: string): string {
+  if (typeof arg !== 'string') return '';
+  if (/[ \t\n\v"]/.test(arg)) {
+    return `"${arg.replace(/"/g, '""')}"`;
+  }
+  return arg;
 }
 
 export class ExecutionService {
   private activeChild: ChildProcess | null = null;
   private cancelled = false;
+  private timedOut = false;
 
   /**
    * Gracefully cancels the currently running execution child process.
@@ -40,11 +54,21 @@ export class ExecutionService {
   }
 
   /**
+   * Returns whether an execution subprocess is currently active.
+   */
+  public isRunning(): boolean {
+    return this.activeChild !== null && !this.activeChild.killed;
+  }
+
+  /**
    * Executes an approved Decision Packet within the specified workspace.
    */
   public async execute(options: ExecutionOptions): Promise<ExecutionEvidence> {
     const { decisionPacket, workspace, onLog, onTaskStart } = options;
     const startTime = Date.now();
+    const timeoutMs = options.timeoutMs ?? 300_000;
+
+    this.timedOut = false;
 
     if (this.cancelled) {
       const err = 'Execution cancelled before start.';
@@ -59,11 +83,12 @@ export class ExecutionService {
         durationMs: 0,
         fullLogPath: '',
         cancelled: true,
+        blockedReason: 'USER_CANCELLED',
       };
     }
 
     // ------------------------------------------------------------------------
-    // Step 1: Strict User Approval & Schema Validation Gating
+    // Step 1: Strict User Approval & Cryptographic Integrity Gating
     // ------------------------------------------------------------------------
     if (!decisionPacket || !decisionPacket.approvedByUser) {
       const err = 'Execution rejected: Decision Packet has not received explicit user approval.';
@@ -71,11 +96,27 @@ export class ExecutionService {
       return this.createBlockedEvidence(err, 'UNAPPROVED_PACKET', startTime);
     }
 
+    // Validate schema
     const schemaCheck = validateDecisionPacket(decisionPacket);
     if (!schemaCheck.valid || !schemaCheck.packet) {
       const err = `Execution rejected: Decision Packet is malformed (${schemaCheck.errors.join(', ')}).`;
       onLog(`[Execution Gated] ${err}\n`);
       return this.createBlockedEvidence(err, 'INVALID_SCHEMA', startTime);
+    }
+
+    // Verify approval cryptographic signature exists
+    if (!decisionPacket.approvalSignature) {
+      const err = 'Execution rejected: Decision Packet lacks required cryptographic approval signature.';
+      onLog(`[Execution Gated] ${err}\n`);
+      return this.createBlockedEvidence(err, 'MISSING_APPROVAL_SIGNATURE', startTime);
+    }
+
+    // Verify packet has not been altered since user approval
+    const computedHash = computeDecisionPacketHash(decisionPacket);
+    if (computedHash !== decisionPacket.approvalSignature) {
+      const err = `Execution rejected: Decision Packet was modified after approval. Expected signature ${decisionPacket.approvalSignature.slice(0, 8)}..., computed ${computedHash.slice(0, 8)}... User re-approval required.`;
+      onLog(`[Security Alert] ${err}\n`);
+      return this.createBlockedEvidence(err, 'TAMPERED_PACKET', startTime);
     }
 
     // ------------------------------------------------------------------------
@@ -88,6 +129,16 @@ export class ExecutionService {
       return this.createBlockedEvidence(err, 'INVALID_WORKSPACE', startTime);
     }
     const targetDir = wsCheck.canonicalPath;
+
+    // Check workspace binding if recorded during approval
+    if (decisionPacket.approvedWorkspace) {
+      const approvedCanonical = validateAndCanonicalizeWorkspace(decisionPacket.approvedWorkspace);
+      if (!approvedCanonical.valid || approvedCanonical.canonicalPath !== targetDir) {
+        const err = `Execution rejected: Target workspace "${targetDir}" does not match approved workspace "${decisionPacket.approvedWorkspace}".`;
+        onLog(`[Security Alert] ${err}\n`);
+        return this.createBlockedEvidence(err, 'WORKSPACE_MISMATCH', startTime);
+      }
+    }
 
     // ------------------------------------------------------------------------
     // Step 3: CLI Binary Resolution
@@ -102,6 +153,8 @@ export class ExecutionService {
 
     onLog(`[Execution Engine] Active agent CLI: ${cliInfo.name} (${cliInfo.version}) at ${cliInfo.executablePath}\n`);
     onLog(`[Execution Engine] Target workspace: ${targetDir}\n`);
+    onLog(`[Security Bound] Approval Signature Verified: ${decisionPacket.approvalSignature.slice(0, 16)}...\n`);
+    onLog(`[Execution Watchdog] Timeout limit configured: ${timeoutMs / 1000}s\n`);
 
     // Ensure .orchestrator log directory exists in workspace
     const logDir = path.join(targetDir, '.orchestrator', 'logs');
@@ -124,74 +177,84 @@ export class ExecutionService {
     onLog(`[Execution Plan] Executing ${totalTasks} approved tasks...\n\n`);
 
     // ------------------------------------------------------------------------
-    // Step 5: Execute Approved Tasks Sequentially
+    // Step 5: Start Watchdog Timer & Execute Tasks Sequentially
     // ------------------------------------------------------------------------
-    for (let i = 0; i < totalTasks; i++) {
-      if (this.cancelled) {
-        onLog(`\n[Execution Cancelled] Operation stopped by user.\n`);
-        finalExitCode = 130;
-        overallSuccess = false;
-        break;
-      }
+    const watchdogTimer = setTimeout(() => {
+      this.timedOut = true;
+      onLog(`\n[Execution Watchdog] TIMEOUT: Execution exceeded limit of ${timeoutMs / 1000}s. Cancelling running process tree...\n`);
+      this.cancel();
+    }, timeoutMs);
 
-      const task = decisionPacket.tasks[i];
-      onTaskStart?.(task, i + 1, totalTasks);
-      onLog(`----------------------------------------------------------------------\n`);
-      onLog(`[Task ${i + 1}/${totalTasks}] ${task.title}\n`);
-      onLog(`Files: ${task.files.join(', ') || 'N/A'}\n`);
-      onLog(`----------------------------------------------------------------------\n`);
+    try {
+      for (let i = 0; i < totalTasks; i++) {
+        if (this.cancelled || this.timedOut) {
+          finalExitCode = this.timedOut ? 124 : 130;
+          overallSuccess = false;
+          break;
+        }
 
-      // Construct safe instruction text
-      const taskInstruction = `Approved Task: ${task.title}\nDescription:\n${task.description}\nTarget Files: ${task.files.join(', ')}\nTest Command: ${task.testCommand || 'None'}`;
+        const task = decisionPacket.tasks[i];
+        onTaskStart?.(task, i + 1, totalTasks);
+        onLog(`----------------------------------------------------------------------\n`);
+        onLog(`[Task ${i + 1}/${totalTasks}] ${task.title}\n`);
+        onLog(`Files: ${task.files.join(', ') || 'N/A'}\n`);
+        onLog(`----------------------------------------------------------------------\n`);
 
-      // Execute via agent CLI without shell concatenation
-      const taskResult = await this.spawnCliTask(cliInfo, taskInstruction, targetDir, (chunk) => {
-        stdoutAccumulator += chunk;
-        onLog(chunk);
-        logStream.write(chunk);
-      }, (chunk) => {
-        stderrAccumulator += chunk;
-        onLog(chunk);
-        logStream.write(chunk);
-      });
+        // Construct safe instruction text
+        const taskInstruction = `Approved Task: ${task.title}\nDescription:\n${task.description}\nTarget Files: ${task.files.join(', ')}\nTest Command: ${task.testCommand || 'None'}`;
 
-      if (!taskResult.success) {
-        overallSuccess = false;
-        finalExitCode = taskResult.exitCode;
-        onLog(`\n[Task Failed] ${task.title} exited with code ${taskResult.exitCode}\n`);
-        break;
-      }
+        // Execute via agent CLI using safe process invocation
+        const taskResult = await this.spawnCliTask(cliInfo, taskInstruction, targetDir, (chunk) => {
+          stdoutAccumulator += chunk;
+          onLog(chunk);
+          logStream.write(chunk);
+        }, (chunk) => {
+          stderrAccumulator += chunk;
+          onLog(chunk);
+          logStream.write(chunk);
+        });
 
-      // Check task testCommand policy compliance
-      if (task.testCommand && !this.cancelled) {
-        const policy = isCommandPolicyCompliant(task.testCommand);
-        if (!policy.compliant) {
-          onLog(`[Policy Alert] Suggested testCommand "${task.testCommand}" was blocked by safety policy: ${policy.reason}\n`);
-        } else {
-          onLog(`[Running Verification] Executing test command: ${task.testCommand}\n`);
-          const testTokens = task.testCommand.split(' ');
-          const testRunner = testTokens[0];
-          const testArgs = testTokens.slice(1);
+        if (!taskResult.success) {
+          overallSuccess = false;
+          finalExitCode = this.timedOut ? 124 : (this.cancelled ? 130 : taskResult.exitCode);
+          onLog(`\n[Task Failed] ${task.title} exited with code ${finalExitCode}\n`);
+          break;
+        }
 
-          const testResult = await this.spawnSafeSubprocess(testRunner, testArgs, targetDir, (chunk) => {
-            stdoutAccumulator += chunk;
-            onLog(chunk);
-            logStream.write(chunk);
-          });
-
-          if (!testResult.success) {
-            onLog(`[Verification Failed] Test command failed with exit code ${testResult.exitCode}\n`);
-            overallSuccess = false;
-            finalExitCode = testResult.exitCode;
-            break;
+        // Check task testCommand policy compliance using structured parser
+        if (task.testCommand && !this.cancelled && !this.timedOut) {
+          const parsedCmd = parseAndValidateCommand(task.testCommand);
+          if (!parsedCmd.valid || !parsedCmd.executable) {
+            onLog(`[Policy Alert] Suggested testCommand "${task.testCommand}" was blocked by safety policy: ${parsedCmd.error}\n`);
           } else {
-            onLog(`✔ Verification command passed!\n`);
+            onLog(`[Running Verification] Executing test command: ${parsedCmd.executable} ${(parsedCmd.args || []).join(' ')}\n`);
+
+            const testResult = await this.spawnSafeSubprocess(
+              parsedCmd.executable,
+              parsedCmd.args || [],
+              targetDir,
+              (chunk) => {
+                stdoutAccumulator += chunk;
+                onLog(chunk);
+                logStream.write(chunk);
+              }
+            );
+
+            if (!testResult.success) {
+              finalExitCode = this.timedOut ? 124 : (this.cancelled ? 130 : testResult.exitCode);
+              onLog(`[Verification Failed] Test command failed with exit code ${finalExitCode}\n`);
+              overallSuccess = false;
+              break;
+            } else {
+              onLog(`✔ Verification command passed!\n`);
+            }
           }
         }
       }
+    } finally {
+      clearTimeout(watchdogTimer);
+      logStream.end();
     }
-
-    logStream.end();
 
     // ------------------------------------------------------------------------
     // Step 6: Post-Execution Git Evidence Collection
@@ -215,7 +278,7 @@ export class ExecutionService {
     onLog(`======================================================================\n`);
 
     return {
-      success: overallSuccess && !this.cancelled,
+      success: overallSuccess && !this.cancelled && !this.timedOut,
       exitCode: finalExitCode,
       stdoutTail: stdoutAccumulator.slice(-1500),
       stderrTail: stderrAccumulator.slice(-1500),
@@ -223,12 +286,16 @@ export class ExecutionService {
       diffStat,
       durationMs,
       fullLogPath: logFilePath,
-      cancelled: this.cancelled,
+      cancelled: this.cancelled && !this.timedOut,
+      timedOut: this.timedOut,
+      blockedReason: this.timedOut
+        ? 'EXECUTION_TIMEOUT'
+        : (this.cancelled ? 'USER_CANCELLED' : undefined),
     };
   }
 
   /**
-   * Spawns the CLI task using safe argument arrays.
+   * Spawns the CLI task using robust argument escaping and Windows cmd wrapper handling.
    * Never passes user or AI text through string concatenation in a shell.
    */
   private spawnCliTask(
@@ -246,10 +313,16 @@ export class ExecutionService {
       let child: ChildProcess;
 
       if (isWin && cliInfo.executablePath.endsWith('.cmd')) {
-        // Execute cmd.exe with discrete tokens (no shell string concatenation)
-        child = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', cliInfo.executablePath, ...args], {
+        // On Windows, cmd.exe /d /s /c strips the outermost quotes.
+        // We format each argument and wrap the complete command line in outer quotes
+        // with windowsVerbatimArguments: true so libuv passes it directly to cmd.exe.
+        const formattedArgs = args.map(quoteCmdArg);
+        const fullCmdLine = `""${cliInfo.executablePath}" ${formattedArgs.join(' ')}"`;
+
+        child = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', fullCmdLine], {
           cwd,
           shell: false,
+          windowsVerbatimArguments: true,
           windowsHide: true,
         });
       } else {
@@ -277,7 +350,7 @@ export class ExecutionService {
   }
 
   /**
-   * Executes a verified safe verification command (e.g. npm test) with discrete argument tokens.
+   * Executes a verified safe verification command (e.g. npm test) with structured tokens.
    */
   private spawnSafeSubprocess(
     executable: string,
@@ -287,12 +360,27 @@ export class ExecutionService {
   ): Promise<{ success: boolean; exitCode: number }> {
     return new Promise((resolve) => {
       const isWin = process.platform === 'win32';
-      const runner = isWin && (executable === 'npm' || executable === 'npx') ? `${executable}.cmd` : executable;
+      let runner = executable;
+      if (isWin && (executable === 'npm' || executable === 'npx' || executable === 'pnpm' || executable === 'yarn')) {
+        runner = `${executable}.cmd`;
+      }
 
-      const child = spawn(runner, args, {
-        cwd,
-        shell: false,
-      });
+      let child: ChildProcess;
+      if (isWin && runner.endsWith('.cmd')) {
+        const formattedArgs = args.map(quoteCmdArg);
+        const fullCmdLine = `""${runner}" ${formattedArgs.join(' ')}"`;
+        child = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', fullCmdLine], {
+          cwd,
+          shell: false,
+          windowsVerbatimArguments: true,
+          windowsHide: true,
+        });
+      } else {
+        child = spawn(runner, args, {
+          cwd,
+          shell: false,
+        });
+      }
 
       this.activeChild = child;
 
@@ -305,6 +393,7 @@ export class ExecutionService {
       });
 
       child.on('error', () => {
+        this.activeChild = null;
         resolve({ success: false, exitCode: 1 });
       });
     });

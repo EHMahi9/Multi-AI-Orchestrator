@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { ExecutionService } from '../dist-electron/main/execution/engine.js';
 import { CliResolver } from '../dist-electron/main/execution/cli-resolver.js';
 import { validateAndCanonicalizeWorkspace, isCommandPolicyCompliant } from '../dist-electron/main/execution/policy.js';
+import { computeDecisionPacketHash } from '../dist-electron/shared/schema.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,7 +14,7 @@ const projectRoot = path.resolve(__dirname, '..');
 
 // Helper to create a valid approved Decision Packet
 function createValidApprovedPacket(overrides = {}) {
-  return {
+  const packet = {
     version: '1.0',
     title: 'Safe Test Feature',
     summary: 'A verified test task packet',
@@ -33,6 +34,11 @@ function createValidApprovedPacket(overrides = {}) {
     approvedByUser: true,
     ...overrides,
   };
+
+  if (!packet.approvalSignature && packet.approvedByUser) {
+    packet.approvalSignature = computeDecisionPacketHash(packet);
+  }
+  return packet;
 }
 
 // ----------------------------------------------------------------------------
@@ -78,7 +84,9 @@ test('Execution Engine: Rejects malformed Decision Packet', async () => {
 // ----------------------------------------------------------------------------
 test('Execution Engine: Blocks directory traversal and protected baselines', () => {
   // Directory traversal
-  const traversal = validateAndCanonicalizeWorkspace(path.join(projectRoot, '..', '..'));
+  const traversal = validateAndCanonicalizeWorkspace(projectRoot + '/../../');
+  assert.equal(traversal.valid, false);
+  assert.match(traversal.error, /traversal sequence/i);
   // Path exists, but let's test relative sequence or protected path
   const protectedBaseline = validateAndCanonicalizeWorkspace('D:\\Code\\NEXT JS\\multi-ai-relay-autonomous\\backups\\v0.1.9');
   assert.equal(protectedBaseline.valid, false);

@@ -52,6 +52,8 @@ export interface DecisionPacket {
   unresolvedRisks: string[];
   consensusTimestamp?: string;
   approvedByUser?: boolean;
+  approvalSignature?: string;
+  approvedWorkspace?: string;
   rawText?: string;
 }
 
@@ -77,6 +79,7 @@ export interface ExecutionEvidence {
   durationMs: number;
   fullLogPath: string;
   cancelled?: boolean;
+  timedOut?: boolean;
   blockedReason?: string;
 }
 

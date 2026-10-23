@@ -5,6 +5,7 @@ import { setupWindowSecurity, validateWorkspacePath } from './security';
 import { ProviderSessionManager } from './providers/manager';
 import { ConsensusOrchestrator } from './consensus/orchestrator';
 import { ExecutionService } from './execution/engine';
+import { computeDecisionPacketHash } from '../shared/schema';
 import type { AppMetadata, OrchestratorSessionState, ProviderId, ProviderState } from '../shared/types';
 
 let mainWindow: BrowserWindow | null = null;
@@ -265,10 +266,13 @@ ipcMain.handle('pipeline:stop', async () => {
 ipcMain.handle('pipeline:approve-packet', async () => {
   if (sessionState.decisionPacket) {
     sessionState.decisionPacket.approvedByUser = true;
+    sessionState.decisionPacket.approvalSignature = computeDecisionPacketHash(sessionState.decisionPacket);
+    sessionState.decisionPacket.approvedWorkspace = sessionState.workspace;
     sessionState.stage = 'completed';
     sessionState.running = false;
     broadcastState();
     broadcastLog(`\n[Decision Packet Approved] User confirmed architecture and tasks.\n`);
+    broadcastLog(`[Security Fingerprint] SHA-256: ${sessionState.decisionPacket.approvalSignature}\n`);
     broadcastLog(`[Milestone 4 Engine Ready] User may now click "Run Approved Tasks" to trigger local agent execution.\n`);
     return { ok: true };
   }
