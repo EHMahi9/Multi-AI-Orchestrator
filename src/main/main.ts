@@ -2,10 +2,12 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import { exec } from 'child_process';
 import { setupWindowSecurity, validateWorkspacePath } from './security';
-import type { AppMetadata, OrchestratorSessionState, ProviderId } from '../shared/types';
+import { ProviderSessionManager } from './providers/manager';
+import type { AppMetadata, OrchestratorSessionState, ProviderId, ProviderState } from '../shared/types';
 
 let mainWindow: BrowserWindow | null = null;
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+const providerManager = new ProviderSessionManager();
 
 // Initial session state
 let sessionState: OrchestratorSessionState = {
@@ -21,10 +23,10 @@ let sessionState: OrchestratorSessionState = {
     claude: false,
   },
   providerStates: {
-    chatgpt: { id: 'chatgpt', name: 'ChatGPT (Architect)', enabled: true, status: 'ready', quotaProtected: false },
-    gemini: { id: 'gemini', name: 'Gemini (Feasibility)', enabled: true, status: 'ready', quotaProtected: false },
-    deepseek: { id: 'deepseek', name: 'DeepSeek (Code Spec)', enabled: true, status: 'ready', quotaProtected: false },
-    claude: { id: 'claude', name: 'Claude (Auditor)', enabled: false, status: 'ready', quotaProtected: true },
+    chatgpt: { id: 'chatgpt', name: 'ChatGPT (Architect)', enabled: true, status: 'not_configured', quotaProtected: false },
+    gemini: { id: 'gemini', name: 'Gemini (Feasibility)', enabled: true, status: 'not_configured', quotaProtected: false },
+    deepseek: { id: 'deepseek', name: 'DeepSeek (Code Spec)', enabled: true, status: 'not_configured', quotaProtected: false },
+    claude: { id: 'claude', name: 'Claude (Auditor)', enabled: false, status: 'disabled', quotaProtected: true },
   },
   decisionPacket: null,
   evidence: null,
@@ -97,7 +99,10 @@ function createWindow(): void {
     mainWindow.loadFile(path.join(__dirname, '../../dist/index.html'));
   }
 
+  providerManager.setMainWindow(mainWindow);
+
   mainWindow.on('closed', () => {
+    providerManager.setMainWindow(null);
     mainWindow = null;
   });
 }
@@ -118,7 +123,26 @@ ipcMain.handle('app:get-metadata', (): AppMetadata => {
 });
 
 ipcMain.handle('session:get-state', (): OrchestratorSessionState => {
+  sessionState.providerStates = providerManager.getAllStates();
   return sessionState;
+});
+
+ipcMain.handle('provider:open-login', async (_event, providerId: ProviderId): Promise<boolean> => {
+  return await providerManager.openLogin(providerId);
+});
+
+ipcMain.handle('provider:check-status', async (_event, providerId: ProviderId): Promise<ProviderState> => {
+  const state = await providerManager.checkStatus(providerId);
+  sessionState.providerStates[providerId] = state;
+  broadcastState();
+  return state;
+});
+
+ipcMain.handle('provider:send-prompt', async (_event, params: { providerId: ProviderId; prompt: string }) => {
+  if (!params || !params.providerId || typeof params.prompt !== 'string') {
+    return { ok: false, error: 'Invalid prompt arguments.' };
+  }
+  return await providerManager.sendPrompt(params.providerId, params.prompt);
 });
 
 ipcMain.handle('cli:check-status', async () => {
@@ -221,6 +245,11 @@ app.whenReady().then(async () => {
       createWindow();
     }
   });
+});
+
+app.on('before-quit', () => {
+  (app as any).isQuitting = true;
+  providerManager.destroyAll();
 });
 
 app.on('window-all-closed', () => {

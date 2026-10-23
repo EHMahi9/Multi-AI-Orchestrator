@@ -62,12 +62,42 @@ export const App: React.FC = () => {
         setLogs((prev) => prev + chunk);
       });
 
+      const unbindProvider = window.electronAPI.onProviderStatusChanged((providerState) => {
+        setSession((prev) => ({
+          ...prev,
+          providerStates: {
+            ...prev.providerStates,
+            [providerState.id]: providerState,
+          },
+        }));
+      });
+
       return () => {
         unbindState();
         unbindLog();
+        unbindProvider();
       };
     }
   }, []);
+
+  const handleOpenLogin = async (id: ProviderId) => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      await window.electronAPI.openProviderLogin(id);
+    }
+  };
+
+  const handleCheckStatus = async (id: ProviderId) => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      const state = await window.electronAPI.checkProviderStatus(id);
+      setSession((prev) => ({
+        ...prev,
+        providerStates: {
+          ...prev.providerStates,
+          [id]: state,
+        },
+      }));
+    }
+  };
 
   const handleStart = async (
     idea: string,
@@ -107,7 +137,7 @@ export const App: React.FC = () => {
 
   return (
     <>
-      <Titlebar session={session} />
+      <Titlebar session={session} onOpenLogin={handleOpenLogin} />
       <main className="workspace">
         <aside className="mission-column">
           <div className="section-header">
@@ -130,6 +160,8 @@ export const App: React.FC = () => {
           session={session}
           logs={logs}
           onClearLogs={() => setLogs('')}
+          onOpenLogin={handleOpenLogin}
+          onCheckStatus={handleCheckStatus}
         />
       </main>
     </>

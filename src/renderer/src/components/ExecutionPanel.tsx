@@ -1,15 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { OrchestratorSessionState } from '../../../shared/types';
+import type { OrchestratorSessionState, ProviderId } from '../../../shared/types';
 
 interface ExecutionPanelProps {
   session: OrchestratorSessionState;
   logs: string;
   onClearLogs: () => void;
+  onOpenLogin?: (id: ProviderId) => void;
+  onCheckStatus?: (id: ProviderId) => void;
 }
 
 type TabKey = 'decision' | 'evidence' | 'review' | 'terminal';
 
-export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ session, logs, onClearLogs }) => {
+export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
+  session,
+  logs,
+  onClearLogs,
+  onOpenLogin,
+  onCheckStatus,
+}) => {
   const [activeTab, setActiveTab] = useState<TabKey>('terminal');
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
   const terminalEndRef = useRef<HTMLDivElement>(null);
@@ -156,25 +164,136 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({ session, logs, o
       {/* Embedded Session Status Drawer */}
       <footer className="webview-drawer">
         <div className="drawer-bar">
-          <span>EMBEDDED AI SESSIONS (PERSISTENT PARTITIONS)</span>
-          <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>Storage: persist:multi-ai-session</span>
+          <span>EMBEDDED AI SESSIONS (PERSISTENT ISOLATED PARTITIONS)</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>Zero-Paid-API Webview Container</span>
         </div>
         <div className="webview-previews">
+          {/* Provider 1: ChatGPT */}
           <div className="webview-slot">
-            <span>ChatGPT Session</span>
-            <span className="badge-session">Ready (Milestone 2)</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <strong style={{ color: 'var(--accent-chatgpt)' }}>ChatGPT</strong>
+              <span className={`badge-session status-${session.providerStates.chatgpt.status}`}>
+                {session.providerStates.chatgpt.status.replace(/_/g, ' ')}
+              </span>
+            </div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+              Partition: persist:ai-provider-chatgpt
+            </div>
+            <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '10px', padding: '3px 6px', flex: 1 }}
+                onClick={() => onOpenLogin?.('chatgpt')}
+              >
+                🖥 Show / Login
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '10px', padding: '3px 6px' }}
+                onClick={() => onCheckStatus?.('chatgpt')}
+                title="Probe DOM status"
+              >
+                🔄
+              </button>
+            </div>
           </div>
+
+          {/* Provider 2: Gemini */}
           <div className="webview-slot">
-            <span>Gemini Session</span>
-            <span className="badge-session">Ready (Milestone 2)</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <strong style={{ color: 'var(--accent-gemini)' }}>Gemini</strong>
+              <span className={`badge-session status-${session.providerStates.gemini.status}`}>
+                {session.providerStates.gemini.status.replace(/_/g, ' ')}
+              </span>
+            </div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+              Partition: persist:ai-provider-gemini
+            </div>
+            <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '10px', padding: '3px 6px', flex: 1 }}
+                onClick={() => onOpenLogin?.('gemini')}
+              >
+                🖥 Show / Login
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '10px', padding: '3px 6px' }}
+                onClick={() => onCheckStatus?.('gemini')}
+                title="Probe DOM status"
+              >
+                🔄
+              </button>
+            </div>
           </div>
+
+          {/* Provider 3: DeepSeek */}
           <div className="webview-slot">
-            <span>DeepSeek Session</span>
-            <span className="badge-session">Ready (Milestone 2)</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <strong style={{ color: 'var(--accent-deepseek)' }}>DeepSeek</strong>
+              <span className={`badge-session status-${session.providerStates.deepseek.status}`}>
+                {session.providerStates.deepseek.status.replace(/_/g, ' ')}
+              </span>
+            </div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+              Partition: persist:ai-provider-deepseek
+            </div>
+            <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '10px', padding: '3px 6px', flex: 1 }}
+                onClick={() => onOpenLogin?.('deepseek')}
+              >
+                🖥 Show / Login
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '10px', padding: '3px 6px' }}
+                onClick={() => onCheckStatus?.('deepseek')}
+                title="Probe DOM status"
+              >
+                🔄
+              </button>
+            </div>
           </div>
+
+          {/* Provider 4: Claude */}
           <div className="webview-slot">
-            <span>Claude Session</span>
-            <span className="badge-session" style={{ color: 'var(--accent-claude)' }}>Opt-In (Milestone 2)</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <strong style={{ color: 'var(--accent-claude)' }}>Claude</strong>
+              <span className={`badge-session status-${session.providerStates.claude.status}`}>
+                {session.providerStates.claude.status.replace(/_/g, ' ')}
+              </span>
+            </div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+              ⚡ Quota Guard Enabled
+            </div>
+            <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '10px', padding: '3px 6px', flex: 1 }}
+                onClick={() => onOpenLogin?.('claude')}
+              >
+                🖥 Show / Login
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '10px', padding: '3px 6px' }}
+                onClick={() => onCheckStatus?.('claude')}
+                title="Probe DOM status"
+              >
+                🔄
+              </button>
+            </div>
           </div>
         </div>
       </footer>

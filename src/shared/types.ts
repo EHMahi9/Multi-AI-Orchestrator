@@ -16,7 +16,14 @@ export type PipelineStage =
 
 export type ProviderId = 'chatgpt' | 'gemini' | 'deepseek' | 'claude';
 
-export type ProviderStatusType = 'ready' | 'needs_auth' | 'rate_limited' | 'disabled' | 'error';
+export type ProviderStatusType =
+  | 'not_configured'
+  | 'login_required'
+  | 'ready'
+  | 'rate_limited'
+  | 'manual_intervention_required'
+  | 'error'
+  | 'disabled';
 
 export interface ProviderState {
   id: ProviderId;
@@ -111,4 +118,11 @@ export interface IElectronAPI {
   resumePipeline: () => Promise<{ ok: boolean }>;
   onStateChange: (callback: (state: OrchestratorSessionState) => void) => () => void;
   onLogChunk: (callback: (chunk: string) => void) => () => void;
+  openProviderLogin: (providerId: ProviderId) => Promise<boolean>;
+  checkProviderStatus: (providerId: ProviderId) => Promise<ProviderState>;
+  sendProviderPrompt: (
+    providerId: ProviderId,
+    prompt: string
+  ) => Promise<{ ok: boolean; response?: string; error?: string }>;
+  onProviderStatusChanged: (callback: (state: ProviderState) => void) => () => void;
 }

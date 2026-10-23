@@ -86,6 +86,13 @@ body {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.model-pill:hover {
+  border-color: var(--border-active);
+  color: #fff;
 }
 
 .model-pill .dot {
@@ -95,9 +102,36 @@ body {
   background: #475569;
 }
 
-.model-pill.active .dot {
+.model-pill.status-ready .dot {
   background: var(--accent-success);
   box-shadow: 0 0 6px var(--accent-success);
+}
+
+.model-pill.status-login_required .dot {
+  background: #eab308;
+  box-shadow: 0 0 6px #eab308;
+}
+
+.model-pill.status-manual_intervention_required .dot {
+  background: #f97316;
+  box-shadow: 0 0 6px #f97316;
+}
+
+.model-pill.status-rate_limited .dot {
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
+}
+
+.model-pill.status-error .dot {
+  background: #ef4444;
+}
+
+.model-pill.status-not_configured .dot {
+  background: #64748b;
+}
+
+.model-pill.status-disabled .dot {
+  background: #334155;
 }
 
 .model-pill.active {
@@ -372,7 +406,7 @@ textarea:focus, input[type="text"]:focus {
 
 /* Bottom Drawer */
 .webview-drawer {
-  height: 140px;
+  height: 155px;
   background: #090c10;
   border-top: 1px solid var(--border-subtle);
   display: flex;
@@ -405,17 +439,24 @@ textarea:focus, input[type="text"]:focus {
   border-radius: 6px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  padding: 8px 10px;
   font-size: 11px;
   color: var(--text-muted);
 }
 
 .badge-session {
   font-size: 9px;
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
+  text-transform: uppercase;
+  font-weight: 700;
   padding: 2px 6px;
   border-radius: 8px;
-  margin-top: 4px;
 }
+
+.badge-session.status-ready { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.badge-session.status-login_required { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+.badge-session.status-manual_intervention_required { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+.badge-session.status-rate_limited { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.badge-session.status-error { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.badge-session.status-not_configured { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+.badge-session.status-disabled { background: rgba(51, 65, 85, 0.2); color: #64748b; }
