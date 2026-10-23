@@ -107,6 +107,16 @@ body {
   box-shadow: 0 0 6px var(--accent-success);
 }
 
+.model-pill.status-sending .dot {
+  background: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8;
+}
+
+.model-pill.status-awaiting_response .dot {
+  background: #a855f7;
+  box-shadow: 0 0 6px #a855f7;
+}
+
 .model-pill.status-login_required .dot {
   background: #eab308;
   box-shadow: 0 0 6px #eab308;
@@ -454,6 +464,8 @@ textarea:focus, input[type="text"]:focus {
 }
 
 .badge-session.status-ready { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.badge-session.status-sending { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+.badge-session.status-awaiting_response { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
 .badge-session.status-login_required { background: rgba(234, 179, 8, 0.2); color: #facc15; }
 .badge-session.status-manual_intervention_required { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
 .badge-session.status-rate_limited { background: rgba(239, 68, 68, 0.2); color: #f87171; }

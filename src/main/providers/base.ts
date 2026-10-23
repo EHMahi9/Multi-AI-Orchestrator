@@ -99,6 +99,21 @@ export abstract class BaseProviderAdapter {
 
     this.window.webContents.on('did-finish-load', async () => {
       await this.checkStatus();
+      // Progressive probes to accommodate client-side SPA mounting
+      setTimeout(() => this.checkStatus().catch(() => {}), 1200);
+      setTimeout(() => this.checkStatus().catch(() => {}), 2500);
+    });
+
+    this.window.webContents.on('did-navigate', async () => {
+      await this.checkStatus().catch(() => {});
+    });
+
+    this.window.webContents.on('did-navigate-in-page', async () => {
+      await this.checkStatus().catch(() => {});
+    });
+
+    this.window.on('focus', async () => {
+      await this.checkStatus().catch(() => {});
     });
 
     try {
@@ -119,6 +134,8 @@ export abstract class BaseProviderAdapter {
     if (this.window && !this.window.isDestroyed()) {
       this.window.show();
       this.window.focus();
+      await this.checkStatus().catch(() => {});
+      setTimeout(() => this.checkStatus().catch(() => {}), 1200);
     }
   }
 

@@ -142,7 +142,11 @@ ipcMain.handle('session:get-state', (): OrchestratorSessionState => {
 });
 
 ipcMain.handle('provider:open-login', async (_event, providerId: ProviderId): Promise<boolean> => {
-  return await providerManager.openLogin(providerId);
+  const result = await providerManager.openLogin(providerId);
+  const state = await providerManager.checkStatus(providerId);
+  sessionState.providerStates[providerId] = state;
+  broadcastState();
+  return result;
 });
 
 ipcMain.handle('provider:check-status', async (_event, providerId: ProviderId): Promise<ProviderState> => {
@@ -430,6 +434,29 @@ app.whenReady().then(async () => {
       createWindow();
     }
   });
+
+  // Periodic background status check for active unauthenticated windows
+  setInterval(() => {
+    for (const id of ['chatgpt', 'gemini', 'deepseek'] as ProviderId[]) {
+      const prov = providerManager.getProvider(id);
+      if (prov) {
+        const currentStatus = prov.getState().status;
+        if (
+          currentStatus === 'not_configured' ||
+          currentStatus === 'login_required' ||
+          currentStatus === 'manual_intervention_required'
+        ) {
+          prov
+            .checkStatus()
+            .then(() => {
+              sessionState.providerStates[id] = prov.getState();
+              broadcastState();
+            })
+            .catch(() => {});
+        }
+      }
+    }
+  }, 4000);
 });
 
 app.on('before-quit', () => {

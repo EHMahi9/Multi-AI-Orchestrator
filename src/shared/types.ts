@@ -25,6 +25,8 @@ export type ProviderStatusType =
   | 'not_configured'
   | 'login_required'
   | 'ready'
+  | 'sending'
+  | 'awaiting_response'
   | 'rate_limited'
   | 'manual_intervention_required'
   | 'error'

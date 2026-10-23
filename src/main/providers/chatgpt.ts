@@ -1,5 +1,6 @@
 import { BaseProviderAdapter } from './base';
 import type { ProviderId, ProviderStatusType } from '../../shared/types';
+import { buildClientSideSendScript } from './chatgpt-dom';
 
 export class ChatGPTAdapter extends BaseProviderAdapter {
   public readonly id: ProviderId = 'chatgpt';
@@ -7,17 +8,24 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
   public readonly loginUrl = 'https://chatgpt.com';
   public readonly quotaProtected = false;
 
+  private activeSubmissionPrompt: string | null = null;
+
   public async checkStatus(): Promise<ProviderStatusType> {
     if (!this.window || this.window.isDestroyed()) {
       this.setStatus('not_configured', 'Window not initialized');
       return 'not_configured';
     }
 
-    const currentUrl = this.window.webContents.getURL();
+    const currentUrl = this.window.webContents.getURL() || '';
 
     // Check if redirected to auth domain
-    if (currentUrl.includes('auth.openai.com') || currentUrl.includes('/auth/login')) {
-      this.setStatus('login_required', 'Login page detected. Click Show/Login to sign in.');
+    if (
+      currentUrl.includes('auth.openai.com') ||
+      currentUrl.includes('/auth/login') ||
+      currentUrl.includes('/login') ||
+      currentUrl.includes('login.openai.com')
+    ) {
+      this.setStatus('login_required', 'Sign in required to use ChatGPT. Click Show/Login to authenticate.');
       return 'login_required';
     }
 
@@ -29,6 +37,8 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
       rateLimitMessage?: string;
     }>(`
       (() => {
+        const visible = (el) => !!el && !!(el.offsetWidth || el.offsetHeight || (el.getClientRects && el.getClientRects().length));
+
         // 1. Cloudflare / Challenge Detection
         const cfSelectors = [
           '#challenge-stage',
@@ -41,52 +51,63 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
         // 2. Login Button Detection
         const loginSelectors = [
           'button[data-testid="login-button"]',
+          'button[data-testid="signup-button"]',
           'a[href*="/auth/login"]',
           'a[href*="/login"]',
-          'button[data-testid="signup-button"]'
+          'a[href*="login.openai.com"]'
         ];
-        const hasLoginButton = loginSelectors.some(sel => !!document.querySelector(sel));
+        const hasLoginButton = loginSelectors.some(sel => {
+          const el = document.querySelector(sel);
+          return el && visible(el);
+        });
 
         // 3. Prompt Input Detection
         const inputSelectors = [
+          'form[data-chatgpt-composer] [contenteditable="true"][role="textbox"]',
+          'form[data-chatgpt-composer] [data-composer-markdown][contenteditable="true"]',
+          'form[data-type="unified-composer"] [contenteditable="true"][role="textbox"]',
+          'form[data-type="unified-composer"] [contenteditable="true"]',
           '#prompt-textarea',
-          'div[contenteditable="true"][id="prompt-textarea"]',
+          '[data-testid="prompt-textarea"]',
+          'div[contenteditable="true"][role="textbox"]',
           'div[contenteditable="true"]',
-          'textarea[data-id="root"]'
+          'textarea[name="prompt-textarea"]',
+          'textarea'
         ];
         const hasPromptInput = inputSelectors.some(sel => {
-          const el = document.querySelector(sel);
-          return el && (el.offsetWidth > 0 || el.offsetHeight > 0);
+          const candidates = Array.from(document.querySelectorAll(sel)).filter(visible);
+          return candidates.length > 0;
         });
 
         // 4. Rate Limit Detection
-        const bodyText = document.body ? document.body.innerText : '';
+        const bodyText = document.body ? (document.body.innerText || document.body.textContent || '') : '';
         const isRateLimited = bodyText.includes("You've reached our limit") ||
           bodyText.includes("Rate limit reached") ||
-          bodyText.includes("Too many requests");
+          bodyText.includes("Too many requests") ||
+          bodyText.includes("You have reached the max");
 
         return {
           hasCloudflare,
           hasLoginButton,
           hasPromptInput,
           isRateLimited,
-          rateLimitMessage: isRateLimited ? 'Rate limit banner detected' : undefined
+          rateLimitMessage: isRateLimited ? 'ChatGPT rate limit active' : undefined
         };
       })()
     `);
 
     if (!probeResult) {
-      // Inconclusive probe, keep current status or mark error
+      // Inconclusive probe, keep current status
       return this.status;
     }
 
     if (probeResult.hasCloudflare) {
-      this.setStatus('manual_intervention_required', 'Cloudflare security verification required.');
+      this.setStatus('manual_intervention_required', 'Cloudflare security verification required. Open ChatGPT window to solve challenge.');
       return 'manual_intervention_required';
     }
 
     if (probeResult.isRateLimited) {
-      this.setStatus('rate_limited', probeResult.rateLimitMessage || 'Rate limit active.');
+      this.setStatus('rate_limited', probeResult.rateLimitMessage || 'ChatGPT rate limit active.');
       return 'rate_limited';
     }
 
@@ -96,11 +117,19 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
     }
 
     if (probeResult.hasLoginButton) {
-      this.setStatus('login_required', 'Sign in required to use ChatGPT.');
+      this.setStatus('login_required', 'Sign in required to use ChatGPT. Click Show/Login to authenticate.');
       return 'login_required';
     }
 
-    // Default fallback if still loading initial SPA shell
+    // Default fallback when page is still hydrating
+    // Preserve ready or login_required if previously established
+    if (this.status === 'ready') {
+      return 'ready';
+    }
+    if (this.status === 'login_required') {
+      return 'login_required';
+    }
+
     this.setStatus('not_configured', 'Waiting for ChatGPT interface to stabilize...');
     return 'not_configured';
   }
@@ -108,66 +137,65 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
   public async sendPrompt(
     prompt: string
   ): Promise<{ ok: boolean; response?: string; error?: string }> {
+    if (this.activeSubmissionPrompt === prompt) {
+      return {
+        ok: false,
+        error: 'A submission for this prompt is already in progress. Please wait for the current turn to complete.'
+      };
+    }
+
     if (this.status !== 'ready') {
       const current = await this.checkStatus();
       if (current !== 'ready') {
         return {
           ok: false,
-          error: `ChatGPT session is not ready (Status: ${this.status}). ${this.lastMessage || ''}`
+          error: `ChatGPT session is not ready (Status: ${this.status.toUpperCase()}). ${this.lastMessage || ''}`
         };
       }
     }
 
-    // Step 1: Input prompt into textarea
-    const inputScript = `
-      (() => {
-        const input = document.querySelector('#prompt-textarea') ||
-          document.querySelector('div[contenteditable="true"]');
-        if (!input) return { ok: false, error: 'Prompt input textarea not found.' };
+    this.activeSubmissionPrompt = prompt;
 
-        input.focus();
-        if (input.tagName === 'TEXTAREA') {
-          input.value = ${JSON.stringify(prompt)};
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-          input.dispatchEvent(new Event('change', { bubbles: true }));
-        } else {
-          // contenteditable handling
-          input.textContent = ${JSON.stringify(prompt)};
-          input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText' }));
-        }
-        return { ok: true };
-      })()
-    `;
+    try {
+      this.setStatus('sending', 'Inserting prompt into ChatGPT composer and submitting...');
 
-    const inputResult = await this.evaluate<{ ok: boolean; error?: string }>(inputScript);
-    if (!inputResult || !inputResult.ok) {
-      return { ok: false, error: inputResult?.error || 'Failed to populate ChatGPT prompt textarea.' };
+      // Execute browser-side prompt staging, resilient send click, and observable verification
+      const sendScript = buildClientSideSendScript(prompt);
+      const submissionResult = await this.evaluate<{
+        ok: boolean;
+        stage: string;
+        actionTaken?: string;
+        signal?: string;
+        error?: string;
+      }>(sendScript, 18000);
+
+      if (!submissionResult || !submissionResult.ok) {
+        const errorMsg =
+          submissionResult?.error ||
+          'Prompt inserted but submission could not be confirmed. Open the ChatGPT window and send or verify the message manually.';
+
+        this.setStatus('manual_intervention_required', errorMsg);
+        return {
+          ok: false,
+          error: errorMsg
+        };
+      }
+
+      // Observable evidence verified submission!
+      this.setStatus('awaiting_response', 'Prompt submitted. Awaiting ChatGPT response...');
+
+      // Wait for streaming response to finish and extract content
+      const responseResult = await this.waitForResponse();
+      if (responseResult.ok) {
+        this.setStatus('ready', 'Response received.');
+      } else {
+        this.setStatus('error', responseResult.error || 'Response extraction failed.');
+      }
+
+      return responseResult;
+    } finally {
+      this.activeSubmissionPrompt = null;
     }
-
-    // Give React state a short moment to validate text length
-    await new Promise((r) => setTimeout(r, 400));
-
-    // Step 2: Click the send button
-    const clickScript = `
-      (() => {
-        const sendBtn = document.querySelector('button[data-testid="send-button"]') ||
-          document.querySelector('button[aria-label="Send prompt"]') ||
-          document.querySelector('button[aria-label="Send message"]');
-        if (!sendBtn) return { ok: false, error: 'Send button not found.' };
-        if (sendBtn.disabled) return { ok: false, error: 'Send button is disabled.' };
-
-        sendBtn.click();
-        return { ok: true };
-      })()
-    `;
-
-    const clickResult = await this.evaluate<{ ok: boolean; error?: string }>(clickScript);
-    if (!clickResult || !clickResult.ok) {
-      return { ok: false, error: clickResult?.error || 'Failed to click ChatGPT send button.' };
-    }
-
-    // Step 3: Wait for streaming response to finish and extract content
-    return await this.waitForResponse();
   }
 
   /**
@@ -183,13 +211,16 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
       const pollScript = `
         (() => {
           // Check if stop button is present (active generation)
-          const stopBtn = document.querySelector('button[aria-label="Stop generating"]') ||
+          const stopBtn = document.querySelector('button[aria-label*="Stop generating" i]') ||
+            document.querySelector('button[aria-label*="Stop response" i]') ||
             document.querySelector('button[data-testid="stop-button"]');
 
           const isStreaming = !!stopBtn;
 
           // Find the latest assistant message
-          const assistantBubbles = Array.from(document.querySelectorAll('[data-message-author-role="assistant"]'));
+          const assistantBubbles = Array.from(document.querySelectorAll(
+            '[data-message-author-role="assistant"], [data-content-search-unit-key$=":assistant"], [data-chatgpt-search-unit-key$=":assistant"]'
+          ));
           const lastBubble = assistantBubbles[assistantBubbles.length - 1];
 
           let text = '';
