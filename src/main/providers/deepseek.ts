@@ -161,32 +161,61 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
 
     await new Promise((r) => setTimeout(r, 400));
 
-    // Step 2: Click DeepSeek send button or trigger Enter submission
+    // Step 2: Click DeepSeek send button or trigger Enter submission with bounded retry
     const clickScript = `
       (() => {
-        const sendBtn = document.querySelector('div[class*="send-btn"]') ||
-          document.querySelector('div[class*="send-button"]') ||
-          document.querySelector('div[role="button"][class*="send"]') ||
-          document.querySelector('button[aria-label*="Send" i]') ||
-          document.querySelector('button[aria-label*="发送"]') ||
-          document.querySelector('button[class*="send"]') ||
-          document.querySelector('#chat-input ~ div[role="button"]') ||
-          document.querySelector('div[class*="input-box"] div[role="button"]');
+        return new Promise((resolve) => {
+          const startTime = Date.now();
+          const checkSend = () => {
+            const sendSelectors = [
+              'div[class*="send-btn"]',
+              'div[class*="send-button"]',
+              'div[role="button"][class*="send"]',
+              'button[aria-label*="Send" i]',
+              'button[aria-label*="发送"]',
+              'button[class*="send"]',
+              '#chat-input ~ div[role="button"]',
+              'div[class*="input-box"] div[role="button"]',
+              '.ds-icon-button'
+            ];
 
-        if (sendBtn && !sendBtn.hasAttribute('disabled') && sendBtn.getAttribute('aria-disabled') !== 'true') {
-          (sendBtn as HTMLElement).click();
-          return { ok: true };
-        }
+            let targetBtn = null;
+            for (const sel of sendSelectors) {
+              const btn = document.querySelector(sel);
+              if (btn) {
+                targetBtn = btn;
+                const isDisabled = btn.hasAttribute('disabled') || btn.getAttribute('aria-disabled') === 'true';
+                if (!isDisabled) {
+                  (btn as HTMLElement).click();
+                  resolve({ ok: true });
+                  return;
+                }
+              }
+            }
 
-        // Fallback: Dispatch Enter key event on the textarea
-        const input = document.querySelector('#chat-input') || document.querySelector('textarea');
-        if (input) {
-          input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-          input.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-          return { ok: true };
-        }
+            // Fallback: Dispatch Enter key event on the textarea
+            const input = document.querySelector('#chat-input') || document.querySelector('textarea');
+            if (input && ((input as HTMLTextAreaElement).value || '').trim().length > 0) {
+              input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+              input.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+              resolve({ ok: true, via: 'enter_key' });
+              return;
+            }
 
-        return { ok: false, error: 'DeepSeek send button not found or disabled.' };
+            if (Date.now() - startTime < 3000) {
+              setTimeout(checkSend, 150);
+            } else {
+              if (targetBtn) {
+                (targetBtn as HTMLElement).click();
+                resolve({ ok: true });
+              } else {
+                resolve({ ok: false, error: 'DeepSeek send button not found or remained disabled after 3s.' });
+              }
+            }
+          };
+
+          checkSend();
+        });
       })()
     `;
 

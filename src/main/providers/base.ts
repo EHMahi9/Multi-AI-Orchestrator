@@ -74,11 +74,13 @@ export abstract class BaseProviderAdapter {
       height: 800,
       title: `${this.name} - AI Provider Session`,
       show: false,
+      paintWhenInitiallyHidden: true,
       webPreferences: {
         session: providerSession,
         nodeIntegration: false,
         contextIsolation: true,
         sandbox: true,
+        backgroundThrottling: false,
       },
     });
 

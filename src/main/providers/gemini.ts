@@ -124,17 +124,29 @@ export class GeminiAdapter extends BaseProviderAdapter {
       }
     }
 
-    // Step 1: Input prompt into Gemini contenteditable textbox
+    // Step 1: Input prompt into Gemini contenteditable textbox with Quill/Angular paragraph support
     const inputScript = `
       (() => {
         const input = document.querySelector('rich-textarea div[contenteditable="true"]') ||
+          document.querySelector('div.ql-editor[contenteditable="true"]') ||
           document.querySelector('div[contenteditable="true"][role="textbox"]') ||
-          document.querySelector('div.ql-editor[contenteditable="true"]');
+          document.querySelector('div[contenteditable="true"]');
         if (!input) return { ok: false, error: 'Gemini prompt input element not found.' };
 
         input.focus();
-        input.textContent = ${JSON.stringify(prompt)};
-        input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText' }));
+        // Trusted-Types-safe clear & paragraph structure for Quill delta sync
+        input.replaceChildren();
+        const lines = ${JSON.stringify(prompt)}.split('\\n');
+        const fragment = document.createDocumentFragment();
+        for (const line of lines) {
+          const p = document.createElement('p');
+          p.textContent = line || '\\u00A0';
+          fragment.appendChild(p);
+        }
+        input.appendChild(fragment);
+
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: ${JSON.stringify(prompt)} }));
         return { ok: true };
       })()
     `;
@@ -146,19 +158,52 @@ export class GeminiAdapter extends BaseProviderAdapter {
 
     await new Promise((r) => setTimeout(r, 400));
 
-    // Step 2: Click Gemini send button
+    // Step 2: Click Gemini send button with bounded retry for Angular state update
     const clickScript = `
       (() => {
-        const sendBtn = document.querySelector('button[aria-label*="Send message"]') ||
-          document.querySelector('button.send-button') ||
-          document.querySelector('button[mat-icon-button][aria-label*="Send"]');
-        if (!sendBtn) return { ok: false, error: 'Send button not found.' };
-        if (sendBtn.disabled || sendBtn.getAttribute('aria-disabled') === 'true') {
-          return { ok: false, error: 'Send button is disabled.' };
-        }
+        return new Promise((resolve) => {
+          const startTime = Date.now();
+          const checkSend = () => {
+            const sendSelectors = [
+              'button.send-button',
+              'button[aria-label*="Send message" i]',
+              'button[aria-label*="Send" i]',
+              'button[aria-label*="전송"]',
+              'button[data-mat-icon-name="send"]',
+              '.send-button-container button',
+              'button mat-icon[data-mat-icon-name="send"]',
+              '.action-wrapper button[aria-label]',
+              '.input-area-container button.send'
+            ];
 
-        sendBtn.click();
-        return { ok: true };
+            let targetBtn = null;
+            for (const sel of sendSelectors) {
+              const btn = document.querySelector(sel);
+              if (btn) {
+                targetBtn = btn;
+                const isDisabled = btn.hasAttribute('disabled') || btn.getAttribute('aria-disabled') === 'true';
+                if (!isDisabled) {
+                  (btn as HTMLElement).click();
+                  resolve({ ok: true });
+                  return;
+                }
+              }
+            }
+
+            if (Date.now() - startTime < 3000) {
+              setTimeout(checkSend, 150);
+            } else {
+              if (targetBtn) {
+                (targetBtn as HTMLElement).click();
+                resolve({ ok: true });
+              } else {
+                resolve({ ok: false, error: 'Gemini send button not found or remained disabled after 3s.' });
+              }
+            }
+          };
+
+          checkSend();
+        });
       })()
     `;
 
