@@ -225,6 +225,8 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
   private async waitForResponse(maxWaitSeconds = 120): Promise<{ ok: boolean; response?: string; error?: string }> {
     const startTime = Date.now();
     let hasStartedStreaming = false;
+    let previousText = '';
+    let stableTicks = 0;
 
     while (Date.now() - startTime < maxWaitSeconds * 1000) {
       await new Promise((r) => setTimeout(r, 1000));
@@ -232,40 +234,89 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
       const pollScript = `
         (() => {
           // Check if stop button is present (active generation)
-          const stopBtn = document.querySelector('button[aria-label*="Stop generating" i]') ||
-            document.querySelector('button[aria-label*="Stop response" i]') ||
-            document.querySelector('button[data-testid="stop-button"]');
-
-          const isStreaming = !!stopBtn;
+          const stopSelectors = [
+            'button[aria-label*="Stop generating" i]',
+            'button[aria-label*="Stop response" i]',
+            'button[aria-label*="Stop streaming" i]',
+            'button[data-testid="stop-button"]'
+          ];
+          const isStreaming = stopSelectors.some((sel) => {
+            const el = document.querySelector(sel);
+            return !!el && ((el as HTMLElement).offsetWidth > 0 || (el as HTMLElement).offsetHeight > 0);
+          });
 
           // Find the latest assistant message
-          const assistantBubbles = Array.from(document.querySelectorAll(
-            '[data-message-author-role="assistant"], [data-content-search-unit-key$=":assistant"], [data-chatgpt-search-unit-key$=":assistant"]'
-          ));
-          const lastBubble = assistantBubbles[assistantBubbles.length - 1];
+          const bubbleSelectors = [
+            '[data-message-author-role="assistant"] .markdown',
+            '[data-message-author-role="assistant"]',
+            'article[data-testid*="conversation-turn"] .markdown',
+            '[data-content-search-unit-key$=":assistant"]',
+            '[data-chatgpt-search-unit-key$=":assistant"]'
+          ];
+
+          let lastBubble = null;
+          for (const sel of bubbleSelectors) {
+            const bubbles = Array.from(document.querySelectorAll(sel));
+            if (bubbles.length > 0) {
+              lastBubble = bubbles[bubbles.length - 1];
+              break;
+            }
+          }
 
           let text = '';
           if (lastBubble) {
-            text = lastBubble.innerText || lastBubble.textContent || '';
+            text = (lastBubble as HTMLElement).innerText || lastBubble.textContent || '';
           }
+
+          // Check for completion action buttons (Copy turn action button, thumbs up/down, share)
+          const completionSelectors = [
+            'button[data-testid="copy-turn-action-button"]',
+            'button[aria-label*="Copy" i]',
+            'button[data-testid="good-response-turn-action-button"]',
+            'button[data-testid="share-turn-action-button"]'
+          ];
+          const hasCompletionSignal = completionSelectors.some((sel) => !!document.querySelector(sel));
 
           return {
             isStreaming,
+            hasCompletionSignal,
             hasContent: text.trim().length > 0,
             text: text.trim()
           };
         })()
       `;
 
-      const poll = await this.evaluate<{ isStreaming: boolean; hasContent: boolean; text: string }>(pollScript);
+      const poll = await this.evaluate<{
+        isStreaming: boolean;
+        hasCompletionSignal: boolean;
+        hasContent: boolean;
+        text: string;
+      }>(pollScript);
       if (!poll) continue;
 
       if (poll.isStreaming || poll.hasContent) {
         hasStartedStreaming = true;
       }
 
-      // If streaming finished after having begun, return the response
-      if (hasStartedStreaming && !poll.isStreaming && poll.hasContent) {
+      if (poll.hasContent && poll.text === previousText) {
+        stableTicks++;
+      } else {
+        stableTicks = 0;
+        previousText = poll.text;
+      }
+
+      // Condition 1: Streaming finished and completion action button is present
+      if (hasStartedStreaming && !poll.isStreaming && poll.hasCompletionSignal && poll.hasContent) {
+        return { ok: true, response: poll.text };
+      }
+
+      // Condition 2: Streaming finished and text has stabilized for >= 2 seconds
+      if (hasStartedStreaming && !poll.isStreaming && stableTicks >= 2 && poll.hasContent) {
+        return { ok: true, response: poll.text };
+      }
+
+      // Condition 3: Fast finish - substantial response (> 50 chars) and stable/completed
+      if (!poll.isStreaming && (poll.hasCompletionSignal || stableTicks >= 2) && poll.text.length > 50) {
         return { ok: true, response: poll.text };
       }
     }

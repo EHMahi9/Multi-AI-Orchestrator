@@ -141,8 +141,14 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
         if (!input) return { ok: false, error: 'DeepSeek chat textarea not found.' };
 
         input.focus();
-        input.value = ${JSON.stringify(prompt)};
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+        // Use HTMLTextAreaElement prototype setter to trigger React internal state updates
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+        if (nativeSetter) {
+          nativeSetter.call(input, ${JSON.stringify(prompt)});
+        } else {
+          (input as HTMLTextAreaElement).value = ${JSON.stringify(prompt)};
+        }
+        input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: ${JSON.stringify(prompt)} }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
         return { ok: true };
       })()
@@ -155,16 +161,32 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
 
     await new Promise((r) => setTimeout(r, 400));
 
-    // Step 2: Click DeepSeek send button
+    // Step 2: Click DeepSeek send button or trigger Enter submission
     const clickScript = `
       (() => {
-        const sendBtn = document.querySelector('div[class*="send-button"]') ||
-          document.querySelector('button[aria-label*="Send"]') ||
-          document.querySelector('button[class*="send-btn"]');
-        if (!sendBtn) return { ok: false, error: 'DeepSeek send button not found.' };
+        const sendBtn = document.querySelector('div[class*="send-btn"]') ||
+          document.querySelector('div[class*="send-button"]') ||
+          document.querySelector('div[role="button"][class*="send"]') ||
+          document.querySelector('button[aria-label*="Send" i]') ||
+          document.querySelector('button[aria-label*="发送"]') ||
+          document.querySelector('button[class*="send"]') ||
+          document.querySelector('#chat-input ~ div[role="button"]') ||
+          document.querySelector('div[class*="input-box"] div[role="button"]');
 
-        (sendBtn as HTMLElement).click();
-        return { ok: true };
+        if (sendBtn && !sendBtn.hasAttribute('disabled') && sendBtn.getAttribute('aria-disabled') !== 'true') {
+          (sendBtn as HTMLElement).click();
+          return { ok: true };
+        }
+
+        // Fallback: Dispatch Enter key event on the textarea
+        const input = document.querySelector('#chat-input') || document.querySelector('textarea');
+        if (input) {
+          input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+          input.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+          return { ok: true };
+        }
+
+        return { ok: false, error: 'DeepSeek send button not found or disabled.' };
       })()
     `;
 
@@ -180,6 +202,8 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
   private async waitForResponse(maxWaitSeconds = 120): Promise<{ ok: boolean; response?: string; error?: string }> {
     const startTime = Date.now();
     let hasStartedStreaming = false;
+    let previousText = '';
+    let stableTicks = 0;
 
     while (Date.now() - startTime < maxWaitSeconds * 1000) {
       await new Promise((r) => setTimeout(r, 1000));
@@ -187,36 +211,89 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
       const pollScript = `
         (() => {
           // Check for active stop generating button
-          const stopBtn = document.querySelector('div[class*="stop-button"]') ||
-            document.querySelector('button[aria-label*="Stop"]');
-
-          const isStreaming = !!stopBtn;
+          const stopSelectors = [
+            'div[class*="stop-button"]',
+            'div[class*="stop-btn"]',
+            'button[aria-label*="Stop" i]',
+            'div[role="button"][class*="stop"]',
+            '[data-testid="stop-button"]'
+          ];
+          const isStreaming = stopSelectors.some((sel) => {
+            const el = document.querySelector(sel);
+            return !!el && ((el as HTMLElement).offsetWidth > 0 || (el as HTMLElement).offsetHeight > 0);
+          });
 
           // Locate latest assistant message bubble (.ds-markdown)
-          const markdownBubbles = Array.from(document.querySelectorAll('.ds-markdown, div[class*="message-content"]'));
-          const lastBubble = markdownBubbles[markdownBubbles.length - 1];
+          const bubbleSelectors = [
+            '.ds-markdown',
+            'div[class*="message-content"]',
+            'div[class*="ds-message"]',
+            'div[class*="chat-message"]'
+          ];
+
+          let lastBubble = null;
+          for (const sel of bubbleSelectors) {
+            const nodes = Array.from(document.querySelectorAll(sel));
+            if (nodes.length > 0) {
+              lastBubble = nodes[nodes.length - 1];
+              break;
+            }
+          }
 
           let text = '';
           if (lastBubble) {
             text = (lastBubble as HTMLElement).innerText || lastBubble.textContent || '';
           }
 
+          // Check for completion action buttons in DeepSeek
+          const completionSelectors = [
+            'div[class*="copy"]',
+            'button[class*="copy"]',
+            'button[aria-label*="Copy" i]',
+            'svg[class*="copy"]'
+          ];
+          const hasCompletionSignal = completionSelectors.some((sel) => !!document.querySelector(sel));
+
           return {
             isStreaming,
+            hasCompletionSignal,
             hasContent: text.trim().length > 0,
             text: text.trim()
           };
         })()
       `;
 
-      const poll = await this.evaluate<{ isStreaming: boolean; hasContent: boolean; text: string }>(pollScript);
+      const poll = await this.evaluate<{
+        isStreaming: boolean;
+        hasCompletionSignal: boolean;
+        hasContent: boolean;
+        text: string;
+      }>(pollScript);
       if (!poll) continue;
 
       if (poll.isStreaming || poll.hasContent) {
         hasStartedStreaming = true;
       }
 
-      if (hasStartedStreaming && !poll.isStreaming && poll.hasContent) {
+      if (poll.hasContent && poll.text === previousText) {
+        stableTicks++;
+      } else {
+        stableTicks = 0;
+        previousText = poll.text;
+      }
+
+      // Condition 1: Streaming finished and completion signal present
+      if (hasStartedStreaming && !poll.isStreaming && poll.hasCompletionSignal && poll.hasContent) {
+        return { ok: true, response: poll.text };
+      }
+
+      // Condition 2: Streaming finished and text has stabilized for >= 2 seconds
+      if (hasStartedStreaming && !poll.isStreaming && stableTicks >= 2 && poll.hasContent) {
+        return { ok: true, response: poll.text };
+      }
+
+      // Condition 3: Fast finish - substantial response (> 50 chars) and stable/completed
+      if (!poll.isStreaming && (poll.hasCompletionSignal || stableTicks >= 2) && poll.text.length > 50) {
         return { ok: true, response: poll.text };
       }
     }

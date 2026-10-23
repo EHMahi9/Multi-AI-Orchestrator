@@ -48,3 +48,33 @@ test('Gemini Adapter: Prompt rejection when session not in ready state', async (
 
   adapter.destroy();
 });
+
+test('Gemini Adapter: waitForResponse resolves immediately when copy button and content exist', async () => {
+  const adapter = new GeminiAdapter();
+  adapter.evaluate = async () => ({
+    isStreaming: false,
+    hasCompletionSignal: true,
+    hasContent: true,
+    text: 'Gemini feasibility review completed with copy action button.'
+  });
+
+  // @ts-ignore
+  const res = await adapter.waitForResponse(5);
+  assert.equal(res.ok, true);
+  assert.equal(res.response, 'Gemini feasibility review completed with copy action button.');
+});
+
+test('Gemini Adapter: waitForResponse resolves when text stabilizes across ticks', async () => {
+  const adapter = new GeminiAdapter();
+  adapter.evaluate = async () => ({
+    isStreaming: false,
+    hasCompletionSignal: false,
+    hasContent: true,
+    text: 'Stabilized Gemini review without copy button.'
+  });
+
+  // @ts-ignore
+  const res = await adapter.waitForResponse(5);
+  assert.equal(res.ok, true);
+  assert.equal(res.response, 'Stabilized Gemini review without copy button.');
+});

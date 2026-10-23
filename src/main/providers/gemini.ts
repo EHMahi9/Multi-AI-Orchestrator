@@ -174,43 +174,106 @@ export class GeminiAdapter extends BaseProviderAdapter {
   private async waitForResponse(maxWaitSeconds = 120): Promise<{ ok: boolean; response?: string; error?: string }> {
     const startTime = Date.now();
     let hasStartedStreaming = false;
+    let previousText = '';
+    let stableTicks = 0;
 
     while (Date.now() - startTime < maxWaitSeconds * 1000) {
       await new Promise((r) => setTimeout(r, 1000));
 
       const pollScript = `
         (() => {
-          // Check for active stop button
-          const stopBtn = document.querySelector('button[aria-label*="Stop response"]') ||
-            document.querySelector('button.stop-button');
-
-          const isStreaming = !!stopBtn;
+          // Check for active stop button or loading indicators
+          const stopSelectors = [
+            'button[aria-label*="Stop response" i]',
+            'button[aria-label*="Stop" i]',
+            'button.stop-button',
+            'mat-progress-bar',
+            '.thinking-indicator',
+            '[data-test-id="response-loading"]',
+            '.response-streaming'
+          ];
+          const isStreaming = stopSelectors.some((sel) => {
+            const el = document.querySelector(sel);
+            return !!el && ((el as HTMLElement).offsetWidth > 0 || (el as HTMLElement).offsetHeight > 0);
+          });
 
           // Locate latest model response bubble
-          const responseNodes = Array.from(document.querySelectorAll('message-content, model-response, .model-response-text'));
-          const lastResponse = responseNodes[responseNodes.length - 1];
+          const bubbleSelectors = [
+            'model-response .markdown',
+            '.model-response-text .markdown',
+            '.model-response-text',
+            'model-response message-content',
+            'message-content',
+            '.response-content .markdown',
+            '[data-test-id="model-response"]',
+            'model-response'
+          ];
+
+          let lastResponse = null;
+          for (const sel of bubbleSelectors) {
+            const nodes = Array.from(document.querySelectorAll(sel));
+            if (nodes.length > 0) {
+              lastResponse = nodes[nodes.length - 1];
+              break;
+            }
+          }
 
           let text = '';
           if (lastResponse) {
-            text = (lastResponse as HTMLElement).innerText || lastResponse.textContent || '';
+            const markdownEl = lastResponse.querySelector('.markdown') || lastResponse;
+            text = (markdownEl as HTMLElement).innerText || markdownEl.textContent || '';
           }
+
+          // Check for completion action buttons in Gemini (copy, thumbs up/down, share)
+          const completionSelectors = [
+            'button[data-test-id="copy-button"]',
+            'button[aria-label*="Copy" i]',
+            'mat-icon[data-mat-icon-name="content_copy"]',
+            'button[aria-label*="Good response" i]',
+            'button[aria-label*="Thumb" i]'
+          ];
+          const hasCompletionSignal = completionSelectors.some((sel) => !!document.querySelector(sel));
 
           return {
             isStreaming,
+            hasCompletionSignal,
             hasContent: text.trim().length > 0,
             text: text.trim()
           };
         })()
       `;
 
-      const poll = await this.evaluate<{ isStreaming: boolean; hasContent: boolean; text: string }>(pollScript);
+      const poll = await this.evaluate<{
+        isStreaming: boolean;
+        hasCompletionSignal: boolean;
+        hasContent: boolean;
+        text: string;
+      }>(pollScript);
       if (!poll) continue;
 
       if (poll.isStreaming || poll.hasContent) {
         hasStartedStreaming = true;
       }
 
-      if (hasStartedStreaming && !poll.isStreaming && poll.hasContent) {
+      if (poll.hasContent && poll.text === previousText) {
+        stableTicks++;
+      } else {
+        stableTicks = 0;
+        previousText = poll.text;
+      }
+
+      // Condition 1: Streaming finished and completion signal present
+      if (hasStartedStreaming && !poll.isStreaming && poll.hasCompletionSignal && poll.hasContent) {
+        return { ok: true, response: poll.text };
+      }
+
+      // Condition 2: Streaming finished and text has stabilized for >= 2 seconds
+      if (hasStartedStreaming && !poll.isStreaming && stableTicks >= 2 && poll.hasContent) {
+        return { ok: true, response: poll.text };
+      }
+
+      // Condition 3: Fast finish - substantial response (> 50 chars) and stable/completed
+      if (!poll.isStreaming && (poll.hasCompletionSignal || stableTicks >= 2) && poll.text.length > 50) {
         return { ok: true, response: poll.text };
       }
     }

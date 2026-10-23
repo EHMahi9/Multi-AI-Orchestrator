@@ -51,3 +51,33 @@ test('Claude Adapter: Prompt rejection when disabled or not ready', async () => 
 
   adapter.destroy();
 });
+
+test('Claude Adapter: waitForResponse resolves immediately when completion signal and content exist', async () => {
+  const adapter = new ClaudeAdapter();
+  adapter.evaluate = async () => ({
+    isStreaming: false,
+    hasCompletionSignal: true,
+    hasContent: true,
+    text: 'Claude response completed successfully with action buttons.'
+  });
+
+  // @ts-ignore
+  const res = await adapter.waitForResponse(5);
+  assert.equal(res.ok, true);
+  assert.equal(res.response, 'Claude response completed successfully with action buttons.');
+});
+
+test('Claude Adapter: waitForResponse resolves when text stabilizes across ticks', async () => {
+  const adapter = new ClaudeAdapter();
+  adapter.evaluate = async () => ({
+    isStreaming: false,
+    hasCompletionSignal: false,
+    hasContent: true,
+    text: 'Stabilized Claude proposal without action button signal.'
+  });
+
+  // @ts-ignore
+  const res = await adapter.waitForResponse(5);
+  assert.equal(res.ok, true);
+  assert.equal(res.response, 'Stabilized Claude proposal without action button signal.');
+});
