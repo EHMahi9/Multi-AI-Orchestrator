@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-AI Autonomous Development Orchestrator</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navigation Bar -->
+    <header class="top-nav">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <h1>Multi-AI Orchestrator</h1>
+          <span class="subtitle">Autonomous AI Collaboration &amp; Antigravity Code Execution</span>
+        </div>
+      </div>
+
+      <div class="header-status">
+        <div class="cdp-status-box" id="cdpStatusBox">
+          <span class="status-dot disconnected" id="cdpDot"></span>
+          <span class="status-label" id="cdpLabel">Chrome: Disconnected</span>
+          <button class="btn btn-secondary btn-sm" id="btnConnectChrome">Connect Chrome</button>
+        </div>
+
+        <div class="tab-badges">
+          <span class="badge badge-tab" id="badgeChatGPT" title="ChatGPT Web Session">ChatGPT</span>
+          <span class="badge badge-tab" id="badgeGemini" title="Gemini Web Session">Gemini</span>
+          <span class="badge badge-tab" id="badgeDeepSeek" title="DeepSeek Web Session">DeepSeek</span>
+          <span class="badge badge-tab" id="badgeClaude" title="Claude Web Session (Opt-In / Free Tier Protected)">Claude</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Pipeline Workflow Stepper -->
+    <div class="pipeline-stepper">
+      <div class="step-node" id="step-multi_ai_debate">
+        <div class="step-num">1</div>
+        <div class="step-meta">
+          <span class="step-title">Multi-AI Debate</span>
+          <span class="step-sub">ChatGPT ↔ Gemini ↔ DeepSeek</span>
+        </div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step-node" id="step-synthesizing_packet">
+        <div class="step-num">2</div>
+        <div class="step-meta">
+          <span class="step-title">Decision Packet</span>
+          <span class="step-sub">Architecture &amp; Tasks</span>
+        </div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step-node" id="step-antigravity_executing">
+        <div class="step-num">3</div>
+        <div class="step-meta">
+          <span class="step-title">Antigravity Execution</span>
+          <span class="step-sub">agy -p Code &amp; Test</span>
+        </div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step-node" id="step-ai_review">
+        <div class="step-num">4</div>
+        <div class="step-meta">
+          <span class="step-title">AI Closed-Loop Review</span>
+          <span class="step-sub">Evidence Verification</span>
+        </div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step-node" id="step-completed">
+        <div class="step-num">✓</div>
+        <div class="step-meta">
+          <span class="step-title">Verified Complete</span>
+          <span class="step-sub">Tests Passed &amp; Approved</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Workspace Area -->
+    <main class="main-content">
+      <!-- Left Column: Input Form & Active Mission -->
+      <section class="panel mission-panel">
+        <div class="panel-header">
+          <h2>🎯 Mission Control</h2>
+          <span class="status-pill idle" id="missionStatusPill">IDLE</span>
+        </div>
+        
+        <div class="panel-body">
+          <div class="form-group">
+            <label for="inputIdea">Project Goal / Development Requirement</label>
+            <textarea id="inputIdea" rows="5" placeholder="e.g. Implement a responsive Dark Mode theme toggle in our Next.js header using CSS variables and localStorage persistence. Include automated unit tests."></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label for="inputWorkspace">Target Workspace Directory</label>
+              <input type="text" id="inputWorkspace" value="d:\Code\NEXT JS\multi-ai-orchestrator" placeholder="Full path to target project directory">
+            </div>
+            <div class="form-group flex-1">
+              <label for="inputMaxRetries">Max Review Loops</label>
+              <input type="number" id="inputMaxRetries" value="3" min="1" max="5">
+            </div>
+          </div>
+
+          <!-- Model Participation Toggles & Free Quota Protection -->
+          <div class="form-group">
+            <label>Participating AI Models &amp; Quota Protection</label>
+            <div class="model-toggles">
+              <label class="toggle-chip"><input type="checkbox" id="chkChatGPT" checked> ChatGPT (Architect)</label>
+              <label class="toggle-chip"><input type="checkbox" id="chkGemini" checked> Gemini (Feasibility)</label>
+              <label class="toggle-chip"><input type="checkbox" id="chkDeepSeek" checked> DeepSeek (Code Spec)</label>
+              <label class="toggle-chip claude-chip" title="Claude has strict free limits (~5 msgs/5h). Keep off unless doing deep audit.">
+                <input type="checkbox" id="chkClaude"> Claude (Auditor)
+                <span class="quota-pill" title="Opt-in to prevent burning daily quota">⚡ Limited</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-bar">
+            <button class="btn btn-primary" id="btnStartPipeline">
+              <span class="btn-icon">🚀</span> Start Autonomous Pipeline
+            </button>
+            <button class="btn btn-danger" id="btnStopPipeline" disabled>
+              <span class="btn-icon">⏹</span> Stop
+            </button>
+          </div>
+        </div>
+
+        <!-- Multi-AI Debate Feed -->
+        <div class="debate-container">
+          <div class="sub-header">
+            <h3>💬 Multi-AI Discussion Stream</h3>
+            <span class="turn-counter" id="debateTurnCounter">0 turns</span>
+          </div>
+          <div class="debate-stream" id="debateStream">
+            <div class="empty-state">No active discussion yet. Enter your mission above and launch the pipeline.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Decision Packet & Execution Terminal -->
+      <section class="panel execution-panel">
+        <div class="tab-nav">
+          <button class="tab-btn active" data-tab="tabDecision">📋 Decision Packet</button>
+          <button class="tab-btn" data-tab="tabEvidence">🧪 Test &amp; Diff Evidence</button>
+          <button class="tab-btn" data-tab="tabReview">🔍 AI Review Loop</button>
+          <button class="tab-btn" data-tab="tabLogs">💻 Terminal Log</button>
+        </div>
+
+        <div class="tab-contents">
+          <!-- Decision Packet Tab -->
+          <div class="tab-pane active" id="tabDecision">
+            <div class="packet-card" id="decisionPacketCard">
+              <div class="empty-state">Decision packet will be compiled automatically after multi-AI consensus.</div>
+            </div>
+          </div>
+
+          <!-- Execution Evidence Tab -->
+          <div class="tab-pane" id="tabEvidence">
+            <div class="evidence-container" id="evidenceContainer">
+              <div class="empty-state">Antigravity execution results (exit code, test outputs, git diff) will appear here.</div>
+            </div>
+          </div>
+
+          <!-- Review Loop Tab -->
+          <div class="tab-pane" id="tabReview">
+            <div class="review-container" id="reviewContainer">
+              <div class="empty-state">AI review results and verification verdicts will appear here.</div>
+            </div>
+          </div>
+
+          <!-- Live Terminal Log Tab -->
+          <div class="tab-pane" id="tabLogs">
+            <div class="terminal-box">
+              <div class="terminal-header">
+                <span class="terminal-title">LIVE PROCESS STREAM</span>
+                <div class="terminal-actions">
+                  <label><input type="checkbox" id="chkAutoScroll" checked> Auto-scroll</label>
+                  <button class="btn btn-xs" id="btnClearLog">Clear</button>
+                </div>
+              </div>
+              <pre class="terminal-body" id="terminalLog">// Waiting for events...</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
