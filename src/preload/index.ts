@@ -29,6 +29,10 @@ const api: IElectronAPI = {
   runApprovedExecution: () => ipcRenderer.invoke('execution:run-approved'),
   cancelExecution: () => ipcRenderer.invoke('execution:cancel'),
 
+  startAutonomousLoop: (params?: { maxIterations?: number }) => ipcRenderer.invoke('execution:run-approved', params),
+  approveCorrection: () => ipcRenderer.invoke('execution:approve-correction'),
+  rejectCorrection: () => ipcRenderer.invoke('execution:reject-correction'),
+
   openProviderLogin: (providerId: ProviderId) => ipcRenderer.invoke('provider:open-login', providerId),
   checkProviderStatus: (providerId: ProviderId) => ipcRenderer.invoke('provider:check-status', providerId),
   sendProviderPrompt: (providerId: ProviderId, prompt: string) => {

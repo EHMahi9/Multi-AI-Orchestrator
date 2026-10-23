@@ -50,6 +50,21 @@ export class ProviderSessionManager {
     return this.providers.get(id);
   }
 
+  public getStatus(id: ProviderId): ProviderState {
+    const provider = this.providers.get(id);
+    if (!provider) {
+      return {
+        id,
+        name: id.toUpperCase(),
+        enabled: false,
+        status: 'not_configured',
+        quotaProtected: id === 'claude',
+        lastMessage: 'Provider not registered.'
+      };
+    }
+    return provider.getState();
+  }
+
   public async openLogin(id: ProviderId): Promise<boolean> {
     const provider = this.providers.get(id);
     if (!provider) {

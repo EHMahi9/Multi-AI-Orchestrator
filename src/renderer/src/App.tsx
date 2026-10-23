@@ -34,6 +34,12 @@ const defaultSession: OrchestratorSessionState = {
     version: '',
     available: false,
   },
+  runId: null,
+  collectedEvidence: null,
+  reviewConsensus: null,
+  correctionProposal: null,
+  iterationHistory: [],
+  finalReportPath: null,
 };
 
 export const App: React.FC = () => {
@@ -154,6 +160,18 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleApproveCorrection = async () => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      await window.electronAPI.approveCorrection();
+    }
+  };
+
+  const handleRejectCorrection = async () => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      await window.electronAPI.rejectCorrection();
+    }
+  };
+
   return (
     <>
       <Titlebar session={session} onOpenLogin={handleOpenLogin} />
@@ -184,6 +202,8 @@ export const App: React.FC = () => {
           onApprovePacket={handleApprovePacket}
           onRejectPacket={handleRejectPacket}
           onRunApproved={handleRunApproved}
+          onApproveCorrection={handleApproveCorrection}
+          onRejectCorrection={handleRejectCorrection}
         />
       </main>
     </>

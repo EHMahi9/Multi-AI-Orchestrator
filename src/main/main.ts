@@ -5,6 +5,7 @@ import { setupWindowSecurity, validateWorkspacePath } from './security';
 import { ProviderSessionManager } from './providers/manager';
 import { ConsensusOrchestrator } from './consensus/orchestrator';
 import { ExecutionService } from './execution/engine';
+import { LoopController } from './review/loop-controller';
 import { computeDecisionPacketHash } from '../shared/schema';
 import type { AppMetadata, OrchestratorSessionState, ProviderId, ProviderState } from '../shared/types';
 
@@ -12,6 +13,7 @@ let mainWindow: BrowserWindow | null = null;
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const providerManager = new ProviderSessionManager();
 const executionService = new ExecutionService();
+const loopController = new LoopController();
 let currentOrchestrator: ConsensusOrchestrator | null = null;
 
 // Initial session state
@@ -44,6 +46,12 @@ let sessionState: OrchestratorSessionState = {
     version: 'detecting...',
     available: false,
   },
+  runId: null,
+  collectedEvidence: null,
+  reviewConsensus: null,
+  correctionProposal: null,
+  iterationHistory: [],
+  finalReportPath: null,
 };
 
 function broadcastState(): void {
@@ -296,30 +304,97 @@ ipcMain.handle('execution:run-approved', async () => {
   sessionState.stage = 'executing';
   broadcastState();
 
-  try {
-    const evidence = await executionService.execute({
-      decisionPacket: sessionState.decisionPacket,
-      workspace: sessionState.workspace,
-      onLog: (chunk) => broadcastLog(chunk),
-      onTaskStart: (task, idx, total) => {
-        broadcastLog(`\n[Task ${idx}/${total}] Beginning: ${task.title}\n`);
-      },
-    });
+  (async () => {
+    try {
+      const result = await loopController.startLoop(sessionState.decisionPacket!, {
+        workspace: sessionState.workspace,
+        selectedProviders: sessionState.selectedProviders,
+        providerManager,
+        maxCorrectionIterations: sessionState.maxRetries || 3,
+        onLog: (chunk) => broadcastLog(chunk),
+        onStageChange: (stage) => {
+          sessionState.stage = stage;
+          broadcastState();
+        },
+        onStateUpdate: (data) => {
+          sessionState.reviewIteration = data.iteration;
+          sessionState.collectedEvidence = data.evidence;
+          sessionState.reviewConsensus = data.consensus;
+          sessionState.correctionProposal = data.proposal;
+          sessionState.iterationHistory = loopController.getHistory();
+          broadcastState();
+        },
+      });
 
-    sessionState.evidence = evidence;
-    sessionState.stage = evidence.success ? 'completed' : 'failed';
-    sessionState.running = false;
-    broadcastState();
-    return { ok: evidence.success, evidence };
-  } catch (err: any) {
-    sessionState.stage = 'failed';
-    sessionState.running = false;
-    broadcastState();
-    return { ok: false, error: err.message };
+      sessionState.stage = result.stage;
+      sessionState.running = result.stage === 'awaiting_correction_approval' ? false : false;
+      if (result.report) {
+        sessionState.finalReportPath = result.report.persistedReportPath;
+        if (result.report.iterations.length > 0) {
+          const lastEvidence = result.report.iterations[result.report.iterations.length - 1].evidence;
+          sessionState.evidence = {
+            success: lastEvidence.success,
+            exitCode: lastEvidence.exitCode,
+            stdoutTail: lastEvidence.stdoutTail,
+            stderrTail: lastEvidence.stderrTail,
+            changedFiles: lastEvidence.changedFiles,
+            diffStat: lastEvidence.diffStat,
+            durationMs: lastEvidence.durationMs,
+            fullLogPath: lastEvidence.fullLogPath,
+            cancelled: lastEvidence.cancelled,
+            timedOut: lastEvidence.timedOut,
+          };
+        }
+      }
+    } catch (err: any) {
+      sessionState.stage = 'failed';
+      sessionState.running = false;
+      broadcastLog(`\n[Fatal Loop Error] ${err.message}\n`);
+    } finally {
+      broadcastState();
+    }
+  })();
+
+  return { ok: true };
+});
+
+ipcMain.handle('execution:approve-correction', async () => {
+  sessionState.running = true;
+  broadcastState();
+
+  (async () => {
+    try {
+      const result = await loopController.approveCorrection();
+      sessionState.stage = result.stage;
+      sessionState.running = result.stage === 'awaiting_correction_approval' ? false : false;
+      if (result.report) {
+        sessionState.finalReportPath = result.report.persistedReportPath;
+      }
+    } catch (err: any) {
+      sessionState.stage = 'failed';
+      sessionState.running = false;
+      broadcastLog(`\n[Fatal Error Approving Correction] ${err.message}\n`);
+    } finally {
+      broadcastState();
+    }
+  })();
+
+  return { ok: true };
+});
+
+ipcMain.handle('execution:reject-correction', async () => {
+  const result = await loopController.rejectCorrection();
+  sessionState.stage = result.stage;
+  sessionState.running = false;
+  if (result.report) {
+    sessionState.finalReportPath = result.report.persistedReportPath;
   }
+  broadcastState();
+  return { ok: true };
 });
 
 ipcMain.handle('execution:cancel', async () => {
+  loopController.cancel();
   executionService.cancel();
   sessionState.stage = 'cancelled';
   sessionState.running = false;

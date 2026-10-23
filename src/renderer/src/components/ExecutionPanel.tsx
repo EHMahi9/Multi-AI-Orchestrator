@@ -10,6 +10,8 @@ interface ExecutionPanelProps {
   onApprovePacket?: () => void;
   onRejectPacket?: () => void;
   onRunApproved?: () => void;
+  onApproveCorrection?: () => void;
+  onRejectCorrection?: () => void;
 }
 
 type TabKey = 'decision' | 'evidence' | 'review' | 'terminal';
@@ -23,6 +25,8 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
   onApprovePacket,
   onRejectPacket,
   onRunApproved,
+  onApproveCorrection,
+  onRejectCorrection,
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('terminal');
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
@@ -279,17 +283,201 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
         )}
 
         {activeTab === 'review' && (
-          <div className="card">
-            {session.reviewVerdict ? (
+          <div className="card" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 290px)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '10px' }}>
               <div>
-                <h4 style={{ color: session.reviewVerdict.approved ? '#22c55e' : '#ef4444' }}>
-                  AI Review Verdict: {session.reviewVerdict.approved ? 'APPROVED' : 'REVISION REQUIRED'}
+                <h3 style={{ fontSize: '15px', color: '#f8fafc', fontWeight: 700 }}>
+                  Autonomous Closed-Loop Review Engine
+                </h3>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Stage: <span className={`stage-badge ${session.stage}`}>{session.stage.replace(/_/g, ' ')}</span> | Iteration: <strong style={{ color: '#38bdf8' }}>{session.reviewIteration}</strong> / {session.maxRetries || 3}
+                </div>
+              </div>
+              {session.finalReportPath && (
+                <div style={{ fontSize: '10.5px', color: '#a78bfa' }}>
+                  Audit Report: <code>{session.finalReportPath.split(/[/\\]/).pop()}</code>
+                </div>
+              )}
+            </div>
+
+            {/* Awaiting Correction Approval Card */}
+            {session.stage === 'awaiting_correction_approval' && session.correctionProposal && (
+              <div style={{ background: '#1c1917', border: '1px solid #f59e0b', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <h4 style={{ color: '#fbbf24', fontSize: '13px', fontWeight: 700 }}>
+                      ⚠️ User Approval Required: Correction Iteration {session.correctionProposal.iteration}
+                    </h4>
+                    <p style={{ color: '#cbd5e1', fontSize: '12px', marginTop: '4px', lineHeight: 1.5 }}>
+                      {session.correctionProposal.explanation}
+                    </p>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>
+                      Target Scope: <code>{session.correctionProposal.proposedPacket.tasks.flatMap((t) => t.files).join(', ') || 'N/A'}</code>
+                    </div>
+                    {session.correctionProposal.expectedVerification && (
+                      <div style={{ fontSize: '11px', color: '#86efac', marginTop: '4px' }}>
+                        Verification Check: <code>{session.correctionProposal.expectedVerification}</code>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '180px' }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ background: '#16a34a', borderColor: '#22c55e', color: '#fff', fontSize: '11px', padding: '6px 12px' }}
+                      onClick={onApproveCorrection}
+                      disabled={session.running}
+                    >
+                      ✔ Approve & Execute Fix
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      style={{ fontSize: '11px', padding: '6px 12px' }}
+                      onClick={onRejectCorrection}
+                      disabled={session.running}
+                    >
+                      ✖ Decline / Stop Loop
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Review Consensus Card */}
+            {session.reviewConsensus ? (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span
+                      style={{
+                        padding: '3px 10px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        background:
+                          session.reviewConsensus.verdict === 'PASS'
+                            ? '#052e16'
+                            : session.reviewConsensus.verdict === 'BLOCKED'
+                            ? '#450a0a'
+                            : '#451a03',
+                        color:
+                          session.reviewConsensus.verdict === 'PASS'
+                            ? '#4ade80'
+                            : session.reviewConsensus.verdict === 'BLOCKED'
+                            ? '#f87171'
+                            : '#fbbf24',
+                        border: `1px solid ${
+                          session.reviewConsensus.verdict === 'PASS'
+                            ? '#16a34a'
+                            : session.reviewConsensus.verdict === 'BLOCKED'
+                            ? '#dc2626'
+                            : '#d97706'
+                        }`,
+                      }}
+                    >
+                      {session.reviewConsensus.verdict.replace(/_/g, ' ')}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 600 }}>
+                      {session.reviewConsensus.summary}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                    Risk: <strong style={{ color: session.reviewConsensus.riskLevel === 'critical' ? '#f87171' : '#38bdf8' }}>{session.reviewConsensus.riskLevel.toUpperCase()}</strong>
+                  </span>
+                </div>
+
+                <div style={{ background: '#0a0d12', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', marginBottom: '14px', fontSize: '11.5px', color: '#94a3b8' }}>
+                  <strong>Consensus Rationale:</strong> {session.reviewConsensus.rationale}
+                </div>
+
+                {/* Review Findings List */}
+                <h4 style={{ color: 'var(--accent-antigravity)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
+                  Review Findings ({session.reviewConsensus.findings.length}):
                 </h4>
-                <p style={{ marginTop: '8px', color: '#cbd5e1' }}>{session.reviewVerdict.summary}</p>
+                {session.reviewConsensus.findings.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                    {session.reviewConsensus.findings.map((f, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          background: '#070a0f',
+                          border: `1px solid ${
+                            f.severity === 'critical'
+                              ? '#dc2626'
+                              : f.severity === 'high'
+                              ? '#ea580c'
+                              : f.severity === 'medium'
+                              ? '#d97706'
+                              : 'var(--border-subtle)'
+                          }`,
+                          borderRadius: '6px',
+                          padding: '10px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: f.severity === 'critical' ? '#f87171' : f.severity === 'high' ? '#fb923c' : '#facc15' }}>
+                            [{f.severity.toUpperCase()}] {f.id}
+                          </span>
+                          {f.reproducible && (
+                            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)' }}>
+                              reproducible
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: '12px', color: '#e2e8f0', marginBottom: '6px' }}>{f.description}</p>
+                        <div style={{ fontSize: '11px', color: '#86efac' }}>
+                          <strong>Recommended Action:</strong> {f.recommendedAction}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ color: '#4ade80', fontSize: '12px', fontStyle: 'italic', marginBottom: '16px' }}>
+                    ✔ No defects or findings identified. All checks verified clean.
+                  </div>
+                )}
               </div>
             ) : (
               <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', padding: '24px', textAlign: 'center' }}>
-                AI verification results and acceptance verdicts will appear here.
+                Multi-AI review verdicts and findings will be generated automatically after execution.
+              </div>
+            )}
+
+            {/* Iteration History Table */}
+            {session.iterationHistory && session.iterationHistory.length > 0 && (
+              <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}>
+                <h4 style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '8px' }}>
+                  Iteration History:
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {session.iterationHistory.map((it, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: '#090d14',
+                        padding: '6px 10px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        border: '1px solid var(--border-subtle)',
+                      }}
+                    >
+                      <span style={{ color: '#cbd5e1' }}>
+                        Iteration {it.iteration}
+                      </span>
+                      <span style={{ color: it.consensus.verdict === 'PASS' ? '#4ade80' : it.consensus.verdict === 'BLOCKED' ? '#f87171' : '#fbbf24' }}>
+                        {it.consensus.verdict}
+                      </span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>
+                        Exit: {it.evidence.exitCode} ({(it.evidence.durationMs / 1000).toFixed(1)}s)
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
