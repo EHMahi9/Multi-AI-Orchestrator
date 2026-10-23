@@ -377,7 +377,11 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                         }`,
                       }}
                     >
-                      {session.reviewConsensus.verdict.replace(/_/g, ' ')}
+                      {!session.reviewConsensus.quorumReached
+                        ? 'INSUFFICIENT QUORUM'
+                        : session.reviewConsensus.participatingProviders.length === 1
+                        ? `SINGLE-PROVIDER: ${session.reviewConsensus.verdict}`
+                        : `MULTI-AI CONSENSUS: ${session.reviewConsensus.verdict}`}
                     </span>
                     <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 600 }}>
                       {session.reviewConsensus.summary}
@@ -389,7 +393,12 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                 </div>
 
                 <div style={{ background: '#0a0d12', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', marginBottom: '14px', fontSize: '11.5px', color: '#94a3b8' }}>
-                  <strong>Consensus Rationale:</strong> {session.reviewConsensus.rationale}
+                  <div><strong>Review Evaluation:</strong> {session.reviewConsensus.rationale}</div>
+                  {session.reviewConsensus.failedProviders && session.reviewConsensus.failedProviders.length > 0 && (
+                    <div style={{ marginTop: '6px', color: '#f87171', fontSize: '11px' }}>
+                      <strong>Unavailable / Excluded Reviewers:</strong> {session.reviewConsensus.failedProviders.join(', ')} (login required or session unready)
+                    </div>
+                  )}
                 </div>
 
                 {/* Review Findings List */}

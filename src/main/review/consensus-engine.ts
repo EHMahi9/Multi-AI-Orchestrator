@@ -170,9 +170,12 @@ export class ConsensusEngine {
     // Rule 6: If any reviewer voted REVISION_REQUIRED or high-severity findings exist
     const hasHighSeverity = aggregatedFindings.some((f) => f.severity === 'high');
     if (reviews.some((r) => r.verdict === 'REVISION_REQUIRED') || hasHighSeverity) {
+      const isSingle = reviews.length === 1;
       return {
         verdict: 'REVISION_REQUIRED',
-        summary: `Reviewers identified defects requiring correction (${aggregatedFindings.length} findings).`,
+        summary: isSingle
+          ? `Single-provider review (${reviews[0].providerId}) identified defects requiring correction (${aggregatedFindings.length} findings).`
+          : `Multi-provider review identified defects requiring correction (${aggregatedFindings.length} findings).`,
         quorumReached: true,
         participatingProviders,
         failedProviders: [],
@@ -180,15 +183,20 @@ export class ConsensusEngine {
         findings: aggregatedFindings,
         requiredCorrections: requiredCorrections.length > 0 ? requiredCorrections : ['Address reviewer defects and re-verify.'],
         riskLevel: maxRisk,
-        rationale: 'Review consensus identified defects that require bounded self-correction.',
+        rationale: isSingle
+          ? `Single-provider review (${reviews[0].providerId}) flagged defects that require bounded self-correction.`
+          : 'Multi-provider review identified defects that require bounded self-correction.',
         timestamp,
       };
     }
 
     // Rule 7: All reviewers voted PASS and evidence is positive
+    const isSingle = reviews.length === 1;
     return {
       verdict: 'PASS',
-      summary: `All ${reviews.length} reviewers verified execution success and passing test evidence.`,
+      summary: isSingle
+        ? `Single-provider review (${reviews[0].providerId}): verified execution success and passing test evidence.`
+        : `Multi-provider consensus (${reviews.length} models): verified execution success and passing test evidence.`,
       quorumReached: true,
       participatingProviders,
       failedProviders: [],
@@ -196,7 +204,9 @@ export class ConsensusEngine {
       findings: aggregatedFindings,
       requiredCorrections: [],
       riskLevel: 'low',
-      rationale: 'Consensus verified: all acceptance criteria met, tests passed with exit code 0, and no blocking defects found.',
+      rationale: isSingle
+        ? `Single-provider review (${reviews[0].providerId}): all criteria met with passing test evidence. Note: Not a multi-model consensus.`
+        : `Multi-provider consensus: all acceptance criteria met across ${reviews.length} models with passing test evidence.`,
       timestamp,
     };
   }
