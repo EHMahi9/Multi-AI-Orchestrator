@@ -9,6 +9,7 @@ interface ExecutionPanelProps {
   onCheckStatus?: (id: ProviderId) => void;
   onApprovePacket?: () => void;
   onRejectPacket?: () => void;
+  onRunApproved?: () => void;
 }
 
 type TabKey = 'decision' | 'evidence' | 'review' | 'terminal';
@@ -21,6 +22,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
   onCheckStatus,
   onApprovePacket,
   onRejectPacket,
+  onRunApproved,
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('terminal');
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
@@ -100,8 +102,24 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                 )}
 
                 {session.decisionPacket.approvedByUser && (
-                  <div style={{ background: '#052e16', border: '1px solid #16a34a', borderRadius: '6px', padding: '8px 12px', marginBottom: '14px', color: '#4ade80', fontSize: '12px' }}>
-                    ✔ <strong>Decision Packet Approved by User.</strong> (Milestone 3 Exit Gate: Local CLI execution remains paused until Milestone 4).
+                  <div style={{ background: '#052e16', border: '1px solid #16a34a', borderRadius: '8px', padding: '12px 14px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ color: '#4ade80', fontSize: '12.5px', fontWeight: 700 }}>
+                        ✔ Decision Packet Approved by User
+                      </div>
+                      <div style={{ color: '#86efac', fontSize: '11px', marginTop: '2px' }}>
+                        Ready for agent execution via <code>{session.cliTool.name}</code> in <code>{session.workspace}</code>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ background: '#16a34a', borderColor: '#22c55e', color: '#fff', fontSize: '11.5px', padding: '6px 14px' }}
+                      onClick={onRunApproved}
+                      disabled={session.running}
+                    >
+                      ⚡ Run Approved Tasks
+                    </button>
                   </div>
                 )}
 
@@ -184,19 +202,77 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
         )}
 
         {activeTab === 'evidence' && (
-          <div className="card">
+          <div className="card" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 290px)' }}>
             {session.evidence ? (
               <div>
-                <h4 style={{ color: '#60a5fa', marginBottom: '8px' }}>Execution Evidence</h4>
-                <div>Status: {session.evidence.success ? '✅ Succeeded' : '❌ Failed'} (Exit Code: {session.evidence.exitCode})</div>
-                <div style={{ marginTop: '8px' }}>Changed Files: {session.evidence.changedFiles.join(', ') || 'None'}</div>
-                <pre style={{ marginTop: '10px', background: '#070a0f', padding: '10px', borderRadius: '6px', color: '#cbd5e1' }}>
-                  {session.evidence.stdoutTail}
-                </pre>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ color: session.evidence.success ? '#4ade80' : '#ef4444', fontSize: '14px', fontWeight: 700 }}>
+                    {session.evidence.success ? '✔ Execution Succeeded' : '✖ Execution Failed / Blocked'}
+                  </h4>
+                  <div style={{ display: 'flex', gap: '8px', fontSize: '11px' }}>
+                    <span style={{ background: '#1e293b', padding: '2px 8px', borderRadius: '4px', color: '#cbd5e1' }}>
+                      Exit Code: {session.evidence.exitCode}
+                    </span>
+                    <span style={{ background: '#1e293b', padding: '2px 8px', borderRadius: '4px', color: '#cbd5e1' }}>
+                      Duration: {(session.evidence.durationMs / 1000).toFixed(1)}s
+                    </span>
+                  </div>
+                </div>
+
+                {session.evidence.blockedReason && (
+                  <div style={{ background: '#450a0a', border: '1px solid #dc2626', borderRadius: '6px', padding: '8px 12px', marginBottom: '12px', color: '#fca5a5', fontSize: '11.5px' }}>
+                    <strong>BLOCKED REASON:</strong> {session.evidence.blockedReason}
+                  </div>
+                )}
+
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 600 }}>
+                    Changed Files ({session.evidence.changedFiles.length}):
+                  </div>
+                  {session.evidence.changedFiles.length > 0 ? (
+                    <ul style={{ paddingLeft: '18px', color: '#e2e8f0', fontSize: '12px' }}>
+                      {session.evidence.changedFiles.map((f, i) => (
+                        <li key={i}><code>{f}</code></li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '11.5px', fontStyle: 'italic' }}>
+                      No workspace files were modified.
+                    </div>
+                  )}
+                </div>
+
+                {session.evidence.diffStat && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 600 }}>
+                      Git Diff Stat:
+                    </div>
+                    <pre style={{ background: '#070a0f', padding: '10px', borderRadius: '6px', color: '#cbd5e1', fontSize: '11px', overflowX: 'auto' }}>
+                      {session.evidence.diffStat}
+                    </pre>
+                  </div>
+                )}
+
+                {session.evidence.fullLogPath && (
+                  <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                    Execution Log: <code>{session.evidence.fullLogPath}</code>
+                  </div>
+                )}
+
+                {session.evidence.stdoutTail && (
+                  <div>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 600 }}>
+                      Output Stream Tail:
+                    </div>
+                    <pre style={{ background: '#070a0f', padding: '10px', borderRadius: '6px', color: '#4ade80', fontSize: '11px', overflowX: 'auto', maxHeight: '180px' }}>
+                      {session.evidence.stdoutTail}
+                    </pre>
+                  </div>
+                )}
               </div>
             ) : (
               <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', padding: '24px', textAlign: 'center' }}>
-                Real execution evidence (exit code, test outputs, git diff) will appear after Antigravity execution.
+                Real execution evidence (exit code, test outputs, git diff) will appear after task execution.
               </div>
             )}
           </div>

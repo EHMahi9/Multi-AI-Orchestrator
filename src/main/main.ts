@@ -4,11 +4,13 @@ import { exec } from 'child_process';
 import { setupWindowSecurity, validateWorkspacePath } from './security';
 import { ProviderSessionManager } from './providers/manager';
 import { ConsensusOrchestrator } from './consensus/orchestrator';
+import { ExecutionService } from './execution/engine';
 import type { AppMetadata, OrchestratorSessionState, ProviderId, ProviderState } from '../shared/types';
 
 let mainWindow: BrowserWindow | null = null;
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const providerManager = new ProviderSessionManager();
+const executionService = new ExecutionService();
 let currentOrchestrator: ConsensusOrchestrator | null = null;
 
 // Initial session state
@@ -267,7 +269,7 @@ ipcMain.handle('pipeline:approve-packet', async () => {
     sessionState.running = false;
     broadcastState();
     broadcastLog(`\n[Decision Packet Approved] User confirmed architecture and tasks.\n`);
-    broadcastLog(`[Milestone 3 Safety Guard] Execution and correction loops remain paused until Milestone 4.\n`);
+    broadcastLog(`[Milestone 4 Engine Ready] User may now click "Run Approved Tasks" to trigger local agent execution.\n`);
     return { ok: true };
   }
   return { ok: false, error: 'No Decision Packet available to approve.' };
@@ -278,6 +280,46 @@ ipcMain.handle('pipeline:reject-packet', async () => {
   sessionState.running = false;
   broadcastState();
   broadcastLog(`\n[Decision Packet Rejected] User requested revision. Adjust goal in Mission Control and rerun.\n`);
+  return { ok: true };
+});
+
+ipcMain.handle('execution:run-approved', async () => {
+  if (!sessionState.decisionPacket || !sessionState.decisionPacket.approvedByUser) {
+    return { ok: false, error: 'No approved Decision Packet available for execution.' };
+  }
+
+  sessionState.running = true;
+  sessionState.stage = 'executing';
+  broadcastState();
+
+  try {
+    const evidence = await executionService.execute({
+      decisionPacket: sessionState.decisionPacket,
+      workspace: sessionState.workspace,
+      onLog: (chunk) => broadcastLog(chunk),
+      onTaskStart: (task, idx, total) => {
+        broadcastLog(`\n[Task ${idx}/${total}] Beginning: ${task.title}\n`);
+      },
+    });
+
+    sessionState.evidence = evidence;
+    sessionState.stage = evidence.success ? 'completed' : 'failed';
+    sessionState.running = false;
+    broadcastState();
+    return { ok: evidence.success, evidence };
+  } catch (err: any) {
+    sessionState.stage = 'failed';
+    sessionState.running = false;
+    broadcastState();
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('execution:cancel', async () => {
+  executionService.cancel();
+  sessionState.stage = 'cancelled';
+  sessionState.running = false;
+  broadcastState();
   return { ok: true };
 });
 

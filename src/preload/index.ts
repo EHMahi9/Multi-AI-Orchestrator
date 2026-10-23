@@ -26,6 +26,8 @@ const api: IElectronAPI = {
 
   approveDecisionPacket: () => ipcRenderer.invoke('pipeline:approve-packet'),
   rejectDecisionPacket: () => ipcRenderer.invoke('pipeline:reject-packet'),
+  runApprovedExecution: () => ipcRenderer.invoke('execution:run-approved'),
+  cancelExecution: () => ipcRenderer.invoke('execution:cancel'),
 
   openProviderLogin: (providerId: ProviderId) => ipcRenderer.invoke('provider:open-login', providerId),
   checkProviderStatus: (providerId: ProviderId) => ipcRenderer.invoke('provider:check-status', providerId),

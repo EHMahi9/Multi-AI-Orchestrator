@@ -76,6 +76,8 @@ export interface ExecutionEvidence {
   diffStat: string;
   durationMs: number;
   fullLogPath: string;
+  cancelled?: boolean;
+  blockedReason?: string;
 }
 
 export interface ReviewVerdict {
@@ -135,6 +137,8 @@ export interface IElectronAPI {
   onLogChunk: (callback: (chunk: string) => void) => () => void;
   approveDecisionPacket: () => Promise<{ ok: boolean }>;
   rejectDecisionPacket: () => Promise<{ ok: boolean }>;
+  runApprovedExecution: () => Promise<{ ok: boolean; evidence?: ExecutionEvidence; error?: string }>;
+  cancelExecution: () => Promise<{ ok: boolean }>;
   openProviderLogin: (providerId: ProviderId) => Promise<boolean>;
   checkProviderStatus: (providerId: ProviderId) => Promise<ProviderState>;
   sendProviderPrompt: (

@@ -148,6 +148,12 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleRunApproved = async () => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      await window.electronAPI.runApprovedExecution();
+    }
+  };
+
   return (
     <>
       <Titlebar session={session} onOpenLogin={handleOpenLogin} />
@@ -177,6 +183,7 @@ export const App: React.FC = () => {
           onCheckStatus={handleCheckStatus}
           onApprovePacket={handleApprovePacket}
           onRejectPacket={handleRejectPacket}
+          onRunApproved={handleRunApproved}
         />
       </main>
     </>
