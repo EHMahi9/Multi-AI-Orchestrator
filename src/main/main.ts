@@ -23,6 +23,7 @@ let sessionState: OrchestratorSessionState = {
   paused: false,
   idea: '',
   workspace: process.cwd(),
+  startingProvider: 'gemini',
   selectedProviders: {
     chatgpt: true,
     gemini: true,
@@ -192,6 +193,7 @@ ipcMain.handle('pipeline:start', async (_event, params: {
   idea: string;
   workspace: string;
   providers: Record<ProviderId, boolean>;
+  startingProvider?: ProviderId;
   maxRetries?: number;
 }) => {
   if (sessionState.running) {
@@ -213,6 +215,9 @@ ipcMain.handle('pipeline:start', async (_event, params: {
   sessionState.idea = params.idea.trim();
   sessionState.workspace = wsCheck.normalized!;
   sessionState.selectedProviders = params.providers;
+  if (params.startingProvider) {
+    sessionState.startingProvider = params.startingProvider;
+  }
   sessionState.consensusTurns = [];
   sessionState.decisionPacket = null;
   sessionState.maxRetries = params.maxRetries || 3;
@@ -227,6 +232,7 @@ ipcMain.handle('pipeline:start', async (_event, params: {
         idea: sessionState.idea,
         workspace: sessionState.workspace,
         selectedProviders: sessionState.selectedProviders,
+        startingProvider: sessionState.startingProvider,
         providerManager,
         onLog: (chunk) => broadcastLog(chunk),
         onTurnUpdate: (turn) => {

@@ -33,6 +33,7 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
       hasCloudflare: boolean;
       hasLoginButton: boolean;
       hasPromptInput: boolean;
+      hasAuthShell: boolean;
       isRateLimited: boolean;
       rateLimitMessage?: string;
     }>(`
@@ -79,7 +80,21 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
           return candidates.length > 0;
         });
 
-        // 4. Rate Limit Detection
+        // 4. Authenticated Shell Detection (Logged in, but composer might not be interactive)
+        const authShellSelectors = [
+          'nav',
+          'aside',
+          '[data-testid="profile-button"]',
+          'button[aria-label="User menu"]',
+          'img[alt="User"]',
+          '#sidebar'
+        ];
+        const hasAuthShell = authShellSelectors.some(sel => {
+          const el = document.querySelector(sel);
+          return el && visible(el);
+        });
+
+        // 5. Rate Limit Detection
         const bodyText = document.body ? (document.body.innerText || document.body.textContent || '') : '';
         const isRateLimited = bodyText.includes("You've reached our limit") ||
           bodyText.includes("Rate limit reached") ||
@@ -90,6 +105,7 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
           hasCloudflare,
           hasLoginButton,
           hasPromptInput,
+          hasAuthShell,
           isRateLimited,
           rateLimitMessage: isRateLimited ? 'ChatGPT rate limit active' : undefined
         };
@@ -112,13 +128,18 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
     }
 
     if (probeResult.hasPromptInput) {
-      this.setStatus('ready', 'Authenticated and ready.');
+      this.setStatus('ready', 'Composer and submission controls verified ready.');
       return 'ready';
     }
 
     if (probeResult.hasLoginButton) {
       this.setStatus('login_required', 'Sign in required to use ChatGPT. Click Show/Login to authenticate.');
       return 'login_required';
+    }
+
+    if (probeResult.hasAuthShell) {
+      this.setStatus('authenticated', 'Session authenticated; waiting for composer and submission controls to become interactive.');
+      return 'authenticated';
     }
 
     // Default fallback when page is still hydrating

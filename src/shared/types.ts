@@ -24,6 +24,7 @@ export type ProviderId = 'chatgpt' | 'gemini' | 'deepseek' | 'claude';
 export type ProviderStatusType =
   | 'not_configured'
   | 'login_required'
+  | 'authenticated'
   | 'ready'
   | 'sending'
   | 'awaiting_response'
@@ -216,6 +217,7 @@ export interface OrchestratorSessionState {
   paused: boolean;
   idea: string;
   workspace: string;
+  startingProvider?: ProviderId;
   selectedProviders: Record<ProviderId, boolean>;
   providerStates: Record<ProviderId, ProviderState>;
   decisionPacket: DecisionPacket | null;
@@ -257,6 +259,7 @@ export interface IElectronAPI {
     idea: string;
     workspace: string;
     providers: Record<ProviderId, boolean>;
+    startingProvider?: ProviderId;
     maxRetries?: number;
   }) => Promise<{ ok: boolean; error?: string }>;
   stopPipeline: () => Promise<{ ok: boolean }>;

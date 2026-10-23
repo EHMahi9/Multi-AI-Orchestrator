@@ -17,6 +17,7 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
       hasVerification: boolean;
       hasLoginModal: boolean;
       hasPromptInput: boolean;
+      hasAuthShell: boolean;
       isRateLimited: boolean;
       rateLimitMessage?: string;
     }>(`
@@ -57,7 +58,18 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
           return el && (el.offsetWidth > 0 || el.offsetHeight > 0);
         });
 
-        // 4. Rate Limit / Server Busy Detection
+        // 4. Authenticated DeepSeek Shell Detection
+        const authShellSelectors = [
+          'div[class*="user-profile"]',
+          'div[class*="avatar"]',
+          'div[class*="sidebar"]'
+        ];
+        const hasAuthShell = authShellSelectors.some(sel => {
+          const el = document.querySelector(sel);
+          return el && (el.offsetWidth > 0 || el.offsetHeight > 0);
+        });
+
+        // 5. Rate Limit / Server Busy Detection
         const bodyText = document.body ? document.body.innerText : '';
         const isRateLimited = bodyText.includes('server is busy') ||
           bodyText.includes('Too many requests') ||
@@ -67,6 +79,7 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
           hasVerification,
           hasLoginModal,
           hasPromptInput,
+          hasAuthShell,
           isRateLimited,
           rateLimitMessage: isRateLimited ? 'DeepSeek server busy / rate limit detected' : undefined
         };
@@ -88,13 +101,18 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
     }
 
     if (probeResult.hasPromptInput) {
-      this.setStatus('ready', 'Authenticated and ready.');
+      this.setStatus('ready', 'Composer and submission controls verified ready.');
       return 'ready';
     }
 
     if (probeResult.hasLoginModal) {
       this.setStatus('login_required', 'DeepSeek login required. Click Show/Login to sign in.');
       return 'login_required';
+    }
+
+    if (probeResult.hasAuthShell) {
+      this.setStatus('authenticated', 'Session authenticated; waiting for composer and submission controls to become interactive.');
+      return 'authenticated';
     }
 
     this.setStatus('not_configured', 'Waiting for DeepSeek interface to stabilize...');

@@ -11,6 +11,7 @@ export interface RunConsensusOptions {
   idea: string;
   workspace: string;
   selectedProviders: Record<ProviderId, boolean>;
+  startingProvider?: ProviderId;
   providerManager: ProviderSessionManager;
   onLog: (chunk: string) => void;
   onTurnUpdate: (turn: ConsensusTurn) => void;
@@ -39,40 +40,50 @@ export class ConsensusOrchestrator {
     this.aborted = false;
 
     // ------------------------------------------------------------------------
-    // Stage 1: Preflight Verification
+    // Stage 1: Preflight Verification & Provider-Agnostic Ordering
     // ------------------------------------------------------------------------
     onStageChange('preflight');
-    onLog(`[Consensus Pipeline] Starting multi-AI consensus for goal: "${idea}"\n`);
+    onLog(`[Consensus Pipeline] Starting Open Collaboration consensus for goal: "${idea}"\n`);
     onLog(`[Workspace] Target: ${workspace}\n`);
 
-    // Verify minimum required providers (ChatGPT and DeepSeek must be enabled)
-    if (!selectedProviders.chatgpt) {
-      const err = 'ChatGPT (Lead Architect) is required for the consensus pipeline.';
-      onLog(`[Preflight Error] ${err}\n`);
-      onStageChange('failed');
-      return { ok: false, stage: 'failed', packet: null, turns, error: err };
-    }
-    if (!selectedProviders.deepseek) {
-      const err = 'DeepSeek (Implementation Planner) is required for schema synthesis.';
+    // Identify active selected providers
+    const activeProviders = (Object.keys(selectedProviders) as ProviderId[]).filter(
+      (id) => selectedProviders[id] === true
+    );
+
+    if (activeProviders.length === 0) {
+      const err = 'At least one AI model must be selected to run the consensus pipeline.';
       onLog(`[Preflight Error] ${err}\n`);
       onStageChange('failed');
       return { ok: false, stage: 'failed', packet: null, turns, error: err };
     }
 
-    // Check actual runtime statuses of active providers
-    onLog(`[Preflight] Verifying provider session authentication and readiness...\n`);
-    for (const [idStr, enabled] of Object.entries(selectedProviders)) {
-      const id = idStr as ProviderId;
-      if (!enabled) continue;
+    // Resolve starting AI provider
+    let starter = options.startingProvider;
+    if (!starter || !selectedProviders[starter]) {
+      starter = activeProviders[0];
+    }
 
+    // Build discussion relay order: starting AI first, followed by other active models
+    const discussionOrder: ProviderId[] = [
+      starter,
+      ...activeProviders.filter((id) => id !== starter),
+    ];
+
+    onLog(`[Workflow] Mode: Open Collaboration (${discussionOrder.length} model${discussionOrder.length > 1 ? 's' : ''})\n`);
+    onLog(`[Relay Order] Lead Turn: ${starter.toUpperCase()} -> Following: ${discussionOrder.slice(1).map((p) => p.toUpperCase()).join(', ') || 'Solo Mode'}\n`);
+
+    // Verify authentication and operational readiness of all participating providers
+    onLog(`[Preflight] Verifying provider session authentication and submission readiness...\n`);
+    for (const id of discussionOrder) {
       const state = await providerManager.checkStatus(id);
       if (state.status !== 'ready') {
-        const err = `Provider "${state.name}" is not ready (Status: ${state.status.toUpperCase()}). Please click "Show / Login" to authenticate before starting.`;
+        const err = `Provider "${state.name}" is not ready (Status: ${state.status.toUpperCase()}). ${state.lastMessage || 'Please authenticate or resolve session state before starting.'}`;
         onLog(`[Preflight Error] ${err}\n`);
         onStageChange('failed');
         return { ok: false, stage: 'failed', packet: null, turns, error: err };
       }
-      onLog(`  ✔ ${state.name}: READY (Partition: persist:ai-provider-${id})\n`);
+      onLog(`  ✔ ${state.name}: READY (Session & submission capability verified)\n`);
     }
 
     if (this.aborted) {
@@ -81,144 +92,52 @@ export class ConsensusOrchestrator {
     }
 
     // ------------------------------------------------------------------------
-    // Stage 2: Multi-AI Discussion Relay (Debating)
+    // Stage 2: Open Collaboration Multi-AI Discussion Relay
     // ------------------------------------------------------------------------
     onStageChange('debating');
 
-    // Turn 1: ChatGPT (Lead Architect)
-    const turn1Start = Date.now();
-    onLog(`\n[Turn 1] ChatGPT: Generating architectural proposal and decomposition...\n`);
-    const prompt1 = `You are the Lead Architect in a Multi-AI Autonomous Development relay.
+    let accumulatedDiscussion = '';
+    let candidatePacketText = '';
+
+    for (let i = 0; i < discussionOrder.length; i++) {
+      const currentProviderId = discussionOrder[i];
+      const turnNumber = i + 1;
+      const isStarter = i === 0;
+      const isFinalTurn = i === discussionOrder.length - 1;
+      const providerName =
+        typeof (providerManager as any).getStatus === 'function'
+          ? (providerManager as any).getStatus(currentProviderId)?.name || currentProviderId.toUpperCase()
+          : currentProviderId === 'chatgpt'
+          ? 'ChatGPT'
+          : currentProviderId === 'gemini'
+          ? 'Gemini'
+          : currentProviderId === 'deepseek'
+          ? 'DeepSeek'
+          : 'Claude';
+
+      // Determine if Claude is at the end acting as optional Auditor
+      const isClaudeAuditor = currentProviderId === 'claude' && isFinalTurn && discussionOrder.length >= 3;
+      // Determine if this turn is expected to produce the synthesis JSON
+      const isSynthesizerTurn = (isFinalTurn && !isClaudeAuditor) || (isClaudeAuditor && i === discussionOrder.length - 2);
+
+      // Define Open Collaboration role and prompt dynamically based on position
+      let role = '';
+      let prompt = '';
+
+      if (discussionOrder.length === 1) {
+        // Solo Mode: Single model produces architecture and schema 1.0 Decision Packet
+        role = 'Autonomous Architect & Synthesizer';
+        prompt = `You are the Lead Architect and Planner in an Autonomous Development pipeline.
 Project Goal: "${idea}"
 Target Workspace: "${workspace}"
 
-Provide a comprehensive architectural proposal:
-1. System overview and decomposition.
+Provide a comprehensive architectural proposal and implementation plan:
+1. System overview and modular decomposition.
 2. Key architectural decisions and trade-offs.
 3. Recommended file structure breakdown.
-4. Edge cases and risks to consider.
+4. Edge cases, potential regressions, and risks to consider.
 
-Be concise, structured, and technically precise.`;
-
-    const turn1Record: ConsensusTurn = {
-      turnNumber: 1,
-      providerId: 'chatgpt',
-      role: 'Lead Architect',
-      prompt: prompt1,
-      response: '',
-      timestamp: new Date().toISOString(),
-      durationMs: 0,
-      status: 'pending',
-    };
-    onTurnUpdate(turn1Record);
-
-    const res1 = await providerManager.sendPrompt('chatgpt', prompt1);
-    turn1Record.durationMs = Date.now() - turn1Start;
-
-    if (!res1.ok || !res1.response?.trim()) {
-      turn1Record.status = 'error';
-      turn1Record.error = res1.error || 'Empty response received from ChatGPT';
-      turns.push(turn1Record);
-      onTurnUpdate(turn1Record);
-      onLog(`[Turn 1 Error] ChatGPT failed: ${turn1Record.error}\n`);
-      onStageChange('failed');
-      return { ok: false, stage: 'failed', packet: null, turns, error: turn1Record.error };
-    }
-
-    turn1Record.status = 'success';
-    turn1Record.response = res1.response.trim();
-    turns.push(turn1Record);
-    onTurnUpdate(turn1Record);
-    onLog(`[Turn 1 Complete] Received ${turn1Record.response.length} characters in ${(turn1Record.durationMs / 1000).toFixed(1)}s.\n`);
-
-    if (this.aborted) {
-      onStageChange('cancelled');
-      return { ok: false, stage: 'cancelled', packet: null, turns, error: 'Pipeline cancelled.' };
-    }
-
-    // Turn 2: Gemini (Feasibility & UX Reviewer)
-    let turn2Response = '';
-    if (selectedProviders.gemini) {
-      const turn2Start = Date.now();
-      onLog(`\n[Turn 2] Gemini: Reviewing architectural feasibility, UX, and edge cases...\n`);
-      const prompt2 = `You are the Feasibility & UX Reviewer in a Multi-AI Autonomous Development relay.
-Project Goal: "${idea}"
-
-ChatGPT (Lead Architect) proposed the following architecture:
----
-${turn1Record.response}
----
-
-Review this proposal:
-1. Feasibility: Are there platform/environment limitations, dependency issues, or performance bottlenecks?
-2. Security & Edge Cases: What failure modes or security risks are unaddressed?
-3. Ergonomics & API Design: Are module boundaries and interfaces clean?
-4. What specific modifications must the Implementation Planner enforce?`;
-
-      const turn2Record: ConsensusTurn = {
-        turnNumber: 2,
-        providerId: 'gemini',
-        role: 'Feasibility Reviewer',
-        prompt: prompt2,
-        response: '',
-        timestamp: new Date().toISOString(),
-        durationMs: 0,
-        status: 'pending',
-      };
-      onTurnUpdate(turn2Record);
-
-      const res2 = await providerManager.sendPrompt('gemini', prompt2);
-      turn2Record.durationMs = Date.now() - turn2Start;
-
-      if (!res2.ok || !res2.response?.trim()) {
-        turn2Record.status = 'error';
-        turn2Record.error = res2.error || 'Empty response from Gemini';
-        onTurnUpdate(turn2Record);
-        onLog(`[Turn 2 Warning] Gemini review failed: ${turn2Record.error}. Proceeding with architect proposal.\n`);
-      } else {
-        turn2Record.status = 'success';
-        turn2Record.response = res2.response.trim();
-        turn2Response = turn2Record.response;
-        onLog(`[Turn 2 Complete] Received ${turn2Record.response.length} characters in ${(turn2Record.durationMs / 1000).toFixed(1)}s.\n`);
-      }
-      turns.push(turn2Record);
-      onTurnUpdate(turn2Record);
-    } else {
-      turns.push({
-        turnNumber: 2,
-        providerId: 'gemini',
-        role: 'Feasibility Reviewer',
-        prompt: '',
-        response: 'Omitted (Gemini unselected in Mission Control)',
-        timestamp: new Date().toISOString(),
-        durationMs: 0,
-        status: 'skipped',
-      });
-    }
-
-    if (this.aborted) {
-      onStageChange('cancelled');
-      return { ok: false, stage: 'cancelled', packet: null, turns, error: 'Pipeline cancelled.' };
-    }
-
-    // Turn 3: DeepSeek (Implementation & Test Planner)
-    const turn3Start = Date.now();
-    onLog(`\n[Turn 3] DeepSeek: Synthesizing plan and generating schema 1.0 Decision Packet...\n`);
-    const prompt3 = `You are the Implementation & Test Planner in a Multi-AI Autonomous Development relay.
-Project Goal: "${idea}"
-Target Workspace: "${workspace}"
-
-Architectural Proposal (ChatGPT):
----
-${turn1Record.response}
----
-Feasibility Review (Gemini):
----
-${turn2Response || 'Gemini review omitted.'}
----
-
-Synthesize these inputs into a concrete, executable plan.
-You MUST end your response with a JSON object inside a \`\`\`json codeblock strictly matching this schema:
+You MUST conclude your response with a JSON object inside a \`\`\`json codeblock strictly matching this schema 1.0 format:
 \`\`\`json
 {
   "version": "1.0",
@@ -246,91 +165,162 @@ You MUST end your response with a JSON object inside a \`\`\`json codeblock stri
   ]
 }
 \`\`\``;
-
-    const turn3Record: ConsensusTurn = {
-      turnNumber: 3,
-      providerId: 'deepseek',
-      role: 'Implementation Planner',
-      prompt: prompt3,
-      response: '',
-      timestamp: new Date().toISOString(),
-      durationMs: 0,
-      status: 'pending',
-    };
-    onTurnUpdate(turn3Record);
-
-    const res3 = await providerManager.sendPrompt('deepseek', prompt3);
-    turn3Record.durationMs = Date.now() - turn3Start;
-
-    if (!res3.ok || !res3.response?.trim()) {
-      turn3Record.status = 'error';
-      turn3Record.error = res3.error || 'Empty response from DeepSeek';
-      turns.push(turn3Record);
-      onTurnUpdate(turn3Record);
-      onLog(`[Turn 3 Error] DeepSeek planning failed: ${turn3Record.error}\n`);
-      onStageChange('failed');
-      return { ok: false, stage: 'failed', packet: null, turns, error: turn3Record.error };
-    }
-
-    turn3Record.status = 'success';
-    turn3Record.response = res3.response.trim();
-    turns.push(turn3Record);
-    onTurnUpdate(turn3Record);
-    onLog(`[Turn 3 Complete] Received ${turn3Record.response.length} characters in ${(turn3Record.durationMs / 1000).toFixed(1)}s.\n`);
-
-    // Turn 4: Claude (Optional Auditor - Quota Guard)
-    let candidatePacketText = turn3Record.response;
-    if (selectedProviders.claude) {
-      const turn4Start = Date.now();
-      onLog(`\n[Turn 4] Claude: Auditing Decision Packet for safety, regressions, and defects (Quota Guard active)...\n`);
-      const prompt4 = `You are the Auditor in a Multi-AI Autonomous Development relay.
+      } else if (isStarter) {
+        // Turn 1: Lead Architect Proposal
+        role = 'Lead Architect';
+        prompt = `You are the Starting AI (${providerName}) in an Open Collaboration Multi-AI Development relay.
 Project Goal: "${idea}"
+Target Workspace: "${workspace}"
 
-Implementation Plan & Proposed Decision Packet (DeepSeek):
+Provide a comprehensive architectural proposal and decomposition:
+1. System overview and modular breakdown.
+2. Key architectural decisions and trade-offs.
+3. Recommended file structure breakdown.
+4. Edge cases, potential regressions, and risks to consider.
+
+Be concise, structured, and technically precise so collaborating models can review and build upon this foundation.`;
+      } else if (isClaudeAuditor) {
+        // Optional Claude Auditor Turn
+        role = 'Auditor (Quota Guard)';
+        prompt = `You are the Auditor and Quota Guard in an Open Collaboration Multi-AI Development relay.
+Project Goal: "${idea}"
+Target Workspace: "${workspace}"
+
+Preceding Collaborative Discussion & Implementation Plan:
 ---
-${turn3Record.response}
+${accumulatedDiscussion}
 ---
 
-Audit this plan:
-1. Verify if any task misses critical imports, types, or tests.
-2. Flag any regression risk or architectural inconsistency.
-3. If amendments are needed, provide the updated \`\`\`json block adhering to schema 1.0. Otherwise, confirm approval.`;
+Audit this plan for security, architectural integrity, and edge cases. Confirm feasibility and acceptance criteria.
+If you approve the plan, conclude with an Auditor Verdict.
+If you recommend modifications, you may provide an amended JSON decision packet inside a \`\`\`json codeblock.`;
+      } else if (isSynthesizerTurn) {
+        // Final Turn or Pre-Auditor Synthesizer into Schema 1.0 Decision Packet
+        role = 'Implementation Synthesizer';
+        prompt = `You are the Synthesizer (${providerName}) in an Open Collaboration Multi-AI Development relay.
+Project Goal: "${idea}"
+Target Workspace: "${workspace}"
 
-      const turn4Record: ConsensusTurn = {
-        turnNumber: 4,
-        providerId: 'claude',
-        role: 'Auditor (Quota Guard)',
-        prompt: prompt4,
+Full Preceding Collaborative Discussion:
+---
+${accumulatedDiscussion}
+---
+
+Synthesize all preceding peer contributions into a concrete, executable plan.
+You MUST conclude your response with a JSON object inside a \`\`\`json codeblock strictly matching this schema 1.0 format:
+\`\`\`json
+{
+  "version": "1.0",
+  "title": "Short title of the feature or requirement",
+  "summary": "1-3 sentence summary of the implementation strategy",
+  "decisions": [
+    "Key agreed architectural decision 1",
+    "Key agreed architectural decision 2"
+  ],
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Task title",
+      "files": ["relative/path/to/file.ts"],
+      "description": "Exact step-by-step instructions for what to create or modify",
+      "testCommand": "npm test or relevant test command"
+    }
+  ],
+  "criteria": [
+    "Acceptance criterion 1",
+    "Acceptance criterion 2"
+  ],
+  "unresolvedRisks": [
+    "Known limitation or follow-up item"
+  ]
+}
+\`\`\``;
+      } else {
+        // Intermediate Turn: Peer Reviewer & Enhancer
+        role = 'Collaborative Reviewer';
+        prompt = `You are a Collaborating Reviewer (${providerName}) in an Open Collaboration Multi-AI Development relay.
+Project Goal: "${idea}"
+Target Workspace: "${workspace}"
+
+Preceding Collaborative Discussion:
+---
+${accumulatedDiscussion}
+---
+
+Review the preceding proposals and feedback:
+1. Feasibility & Environment: Are there platform/environment limitations, dependency issues, or performance bottlenecks?
+2. Security & Edge Cases: What failure modes, regressions, or missing error paths are unaddressed?
+3. Architecture & Modularity: Are module boundaries, APIs, and file responsibilities clean?
+4. Concrete Enhancements: What specific tasks and test requirements must the final plan enforce?`;
+      }
+
+      const turnRecord: ConsensusTurn = {
+        turnNumber,
+        providerId: currentProviderId,
+        role,
+        prompt,
         response: '',
         timestamp: new Date().toISOString(),
         durationMs: 0,
         status: 'pending',
       };
-      onTurnUpdate(turn4Record);
+      onTurnUpdate(turnRecord);
 
-      const res4 = await providerManager.sendPrompt('claude', prompt4);
-      turn4Record.durationMs = Date.now() - turn4Start;
+      onLog(`\n[Turn ${turnNumber}] ${providerName} (${role}): Generating response...\n`);
+      const turnStart = Date.now();
+      const res = await providerManager.sendPrompt(currentProviderId, prompt);
+      turnRecord.durationMs = Date.now() - turnStart;
 
-      if (!res4.ok || !res4.response?.trim()) {
-        turn4Record.status = 'error';
-        turn4Record.error = res4.error || 'Empty response from Claude';
-        onTurnUpdate(turn4Record);
-        onLog(`[Turn 4 Warning] Claude audit failed: ${turn4Record.error}. Falling back to DeepSeek packet.\n`);
-      } else {
-        turn4Record.status = 'success';
-        turn4Record.response = res4.response.trim();
-        // Check if Claude provided an amended JSON block
-        const claudeJsonCheck = extractJsonFromText(turn4Record.response);
-        if (claudeJsonCheck.ok) {
-          candidatePacketText = turn4Record.response;
+      if (!res.ok || !res.response?.trim()) {
+        turnRecord.status = 'error';
+        turnRecord.error = res.error || `Empty response received from ${providerName}`;
+        turns.push(turnRecord);
+        onTurnUpdate(turnRecord);
+        onLog(`[Turn ${turnNumber} Error] ${providerName} failed: ${turnRecord.error}\n`);
+
+        // If the starting provider or the implementation synthesizer fails without existing packet, halt
+        if (isStarter || (isSynthesizerTurn && !candidatePacketText)) {
+          onStageChange('failed');
+          return {
+            ok: false,
+            stage: 'failed',
+            packet: null,
+            turns,
+            error: `Turn ${turnNumber} (${providerName}) failed: ${turnRecord.error}. Halting pipeline without silent substitution.`
+          };
         }
-        onLog(`[Turn 4 Complete] Audit finished in ${(turn4Record.durationMs / 1000).toFixed(1)}s.\n`);
+
+        // If an intermediate reviewer fails, log and continue to remaining contributors
+        accumulatedDiscussion += `\n[Turn ${turnNumber} - ${providerName}]: Review failed (${turnRecord.error})\n`;
+      } else {
+        turnRecord.status = 'success';
+        turnRecord.response = res.response.trim();
+        turns.push(turnRecord);
+        onTurnUpdate(turnRecord);
+
+        accumulatedDiscussion += `\n[Turn ${turnNumber} - ${providerName} (${role})]:\n${turnRecord.response}\n`;
+
+        // If the turn produced a JSON codeblock, update candidatePacketText
+        const jsonCheck = extractJsonFromText(turnRecord.response);
+        if (jsonCheck.ok) {
+          candidatePacketText = turnRecord.response;
+        } else if (isFinalTurn && !candidatePacketText) {
+          candidatePacketText = turnRecord.response;
+        }
+
+        onLog(`[Turn ${turnNumber} Complete] Received ${turnRecord.response.length} characters in ${(turnRecord.durationMs / 1000).toFixed(1)}s.\n`);
       }
-      turns.push(turn4Record);
-      onTurnUpdate(turn4Record);
-    } else {
-      turns.push({
-        turnNumber: 4,
+
+      if (this.aborted) {
+        onStageChange('cancelled');
+        return { ok: false, stage: 'cancelled', packet: null, turns, error: 'Pipeline cancelled.' };
+      }
+    }
+
+    // If Claude was explicitly disabled in a multi-model relay, record skipped turn for Quota Guard audit trail
+    if (activeProviders.length > 1 && selectedProviders.claude === false && !turns.some((t) => t.providerId === 'claude')) {
+      const skippedTurn: ConsensusTurn = {
+        turnNumber: turns.length + 1,
         providerId: 'claude',
         role: 'Auditor (Quota Guard)',
         prompt: '',
@@ -338,19 +328,23 @@ Audit this plan:
         timestamp: new Date().toISOString(),
         durationMs: 0,
         status: 'skipped',
-      });
-    }
-
-    if (this.aborted) {
-      onStageChange('cancelled');
-      return { ok: false, stage: 'cancelled', packet: null, turns, error: 'Pipeline cancelled.' };
+      };
+      turns.push(skippedTurn);
+      onTurnUpdate(skippedTurn);
     }
 
     // ------------------------------------------------------------------------
     // Stage 3: Synthesizing & Validating Decision Packet
     // ------------------------------------------------------------------------
     onStageChange('synthesizing');
-    onLog(`\n[Synthesis] Extracting and validating Decision Packet schema...\n`);
+    onLog(`\n[Synthesis] Extracting and validating Decision Packet schema 1.0...\n`);
+
+    if (!candidatePacketText) {
+      const err = 'No candidate Decision Packet text was produced by the consensus pipeline.';
+      onLog(`[Synthesis Error] ${err}\n`);
+      onStageChange('failed');
+      return { ok: false, stage: 'failed', packet: null, turns, error: err };
+    }
 
     const extracted = extractJsonFromText(candidatePacketText);
     if (!extracted.ok) {
@@ -375,13 +369,12 @@ Audit this plan:
     onLog(`  Decisions: ${finalPacket.decisions.length} | Tasks: ${finalPacket.tasks.length} | Criteria: ${finalPacket.criteria.length}\n`);
 
     // ------------------------------------------------------------------------
-    // Stage 4: Approval Checkpoint (Milestone 3 Exit Gate)
+    // Stage 4: Approval Checkpoint
     // ------------------------------------------------------------------------
     onStageChange('awaiting_confirmation');
     onLog(`\n======================================================================\n`);
     onLog(`[APPROVAL GATED] Consensus reached. Execution paused.\n`);
     onLog(`User must explicitly approve the Decision Packet in the dashboard.\n`);
-    onLog(`(Milestone 3 Exit Gate: Shell execution and code edits remain strictly gated).\n`);
     onLog(`======================================================================\n`);
 
     return {

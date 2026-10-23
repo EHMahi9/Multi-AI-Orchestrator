@@ -11,6 +11,7 @@ const defaultSession: OrchestratorSessionState = {
   paused: false,
   idea: '',
   workspace: '',
+  startingProvider: 'gemini',
   selectedProviders: {
     chatgpt: true,
     gemini: true,
@@ -110,6 +111,7 @@ export const App: React.FC = () => {
     idea: string,
     workspace: string,
     providers: Record<ProviderId, boolean>,
+    startingProvider: ProviderId,
     maxRetries: number
   ) => {
     if (typeof window !== 'undefined' && window.electronAPI) {
@@ -117,6 +119,7 @@ export const App: React.FC = () => {
         idea,
         workspace,
         providers,
+        startingProvider,
         maxRetries,
       });
       if (!res.ok) {

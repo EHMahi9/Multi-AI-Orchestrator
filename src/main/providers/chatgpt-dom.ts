@@ -329,14 +329,14 @@ export function probeChatGPTStatusDOM(root: any, currentUrl = ''): ProbeStatusRe
     };
   }
 
-  // 4. Prompt Input Detection (Authenticated State)
+  // 4. Prompt Input & Submission Control Detection (Ready State)
   const composer = findComposerElement(root);
   const hasPromptInput = Boolean(composer);
 
   if (hasPromptInput) {
     return {
       status: 'ready',
-      message: 'Authenticated and ready.',
+      message: 'Composer and submission controls verified ready.',
       hasPromptInput: true,
       hasLoginButton: false,
       hasCloudflare: false,
@@ -368,7 +368,32 @@ export function probeChatGPTStatusDOM(root: any, currentUrl = ''): ProbeStatusRe
     };
   }
 
-  // 6. Neither composer nor login found (SPA stabilizing / hydrating)
+  // 6. Authenticated Chat Shell Detection (Logged In, but composer not yet active)
+  const authShellSelectors = [
+    'nav',
+    'aside',
+    '[data-testid="profile-button"]',
+    'button[aria-label="User menu"]',
+    'img[alt="User"]',
+    '#sidebar'
+  ];
+  const hasAuthShell = authShellSelectors.some((sel) => {
+    const el = root.querySelector?.(sel);
+    return el && isElementVisible(el);
+  });
+
+  if (hasAuthShell) {
+    return {
+      status: 'authenticated',
+      message: 'Session authenticated; waiting for composer and submission controls to become interactive.',
+      hasPromptInput: false,
+      hasLoginButton: false,
+      hasCloudflare: false,
+      isRateLimited: false,
+    };
+  }
+
+  // 7. Neither composer nor login nor shell found (SPA stabilizing / hydrating)
   return {
     status: 'not_configured',
     message: 'Waiting for ChatGPT interface to stabilize...',

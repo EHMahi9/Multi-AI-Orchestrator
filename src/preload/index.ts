@@ -11,6 +11,7 @@ const api: IElectronAPI = {
     idea: string;
     workspace: string;
     providers: Record<ProviderId, boolean>;
+    startingProvider?: ProviderId;
     maxRetries?: number;
   }) => {
     // Basic argument validation before passing to IPC

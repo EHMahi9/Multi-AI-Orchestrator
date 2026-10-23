@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { OrchestratorSessionState, ProviderId } from '../../../shared/types';
 
 interface MissionControlProps {
   session: OrchestratorSessionState;
-  onStart: (idea: string, workspace: string, providers: Record<ProviderId, boolean>, maxRetries: number) => void;
+  onStart: (
+    idea: string,
+    workspace: string,
+    providers: Record<ProviderId, boolean>,
+    startingProvider: ProviderId,
+    maxRetries: number
+  ) => void;
   onStop: () => void;
   onSelectWorkspace: () => void;
 }
@@ -17,15 +23,34 @@ export const MissionControl: React.FC<MissionControlProps> = ({
   const [idea, setIdea] = useState(session.idea);
   const [workspace, setWorkspace] = useState(session.workspace);
   const [providers, setProviders] = useState<Record<ProviderId, boolean>>(session.selectedProviders);
+  const [startingProvider, setStartingProvider] = useState<ProviderId>(
+    session.startingProvider || 'gemini'
+  );
   const [maxRetries, setMaxRetries] = useState<number>(session.maxRetries || 3);
 
-  // Sync workspace if updated externally
-  React.useEffect(() => {
+  // Sync workspace and startingProvider if updated externally
+  useEffect(() => {
     setWorkspace(session.workspace);
   }, [session.workspace]);
 
+  useEffect(() => {
+    if (session.startingProvider && providers[session.startingProvider]) {
+      setStartingProvider(session.startingProvider);
+    }
+  }, [session.startingProvider]);
+
   const toggleProvider = (id: ProviderId) => {
-    setProviders(prev => ({ ...prev, [id]: !prev[id] }));
+    setProviders((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      // If the currently selected starting AI was unchecked, pick another active provider
+      if (!next[id] && startingProvider === id) {
+        const available = (Object.keys(next) as ProviderId[]).filter((p) => next[p]);
+        if (available.length > 0) {
+          setStartingProvider(available[0]);
+        }
+      }
+      return next;
+    });
   };
 
   const handleStart = () => {
@@ -33,8 +58,28 @@ export const MissionControl: React.FC<MissionControlProps> = ({
       alert('Please enter a development goal or requirement.');
       return;
     }
-    onStart(idea.trim(), workspace, providers, maxRetries);
+    const active = (Object.keys(providers) as ProviderId[]).filter((p) => providers[p]);
+    if (active.length === 0) {
+      alert('Please select at least one participating AI model.');
+      return;
+    }
+    // Ensure selected starting provider is active
+    let actualStarter = startingProvider;
+    if (!providers[actualStarter]) {
+      actualStarter = active[0];
+      setStartingProvider(actualStarter);
+    }
+    onStart(idea.trim(), workspace, providers, actualStarter, maxRetries);
   };
+
+  const providerNames: Record<ProviderId, string> = {
+    chatgpt: 'ChatGPT',
+    gemini: 'Gemini',
+    deepseek: 'DeepSeek',
+    claude: 'Claude',
+  };
+
+  const activeProviderList = (Object.keys(providers) as ProviderId[]).filter((id) => providers[id]);
 
   return (
     <div className="mission-form">
@@ -72,7 +117,7 @@ export const MissionControl: React.FC<MissionControlProps> = ({
 
       <div className="form-group">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <label className="form-label">Participating AI Models</label>
+          <label className="form-label">Participating AI Models (Open Collaboration)</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Max Review Loops:</span>
             <select
@@ -85,7 +130,7 @@ export const MissionControl: React.FC<MissionControlProps> = ({
                 border: '1px solid var(--border-subtle)',
                 borderRadius: '4px',
                 padding: '2px 6px',
-                fontSize: '11px'
+                fontSize: '11px',
               }}
             >
               <option value={1}>1</option>
@@ -100,20 +145,11 @@ export const MissionControl: React.FC<MissionControlProps> = ({
           <label className="toggle-chip">
             <input
               type="checkbox"
-              checked={providers.chatgpt}
-              onChange={() => toggleProvider('chatgpt')}
-              disabled={session.running}
-            />
-            ChatGPT (Architect)
-          </label>
-          <label className="toggle-chip">
-            <input
-              type="checkbox"
               checked={providers.gemini}
               onChange={() => toggleProvider('gemini')}
               disabled={session.running}
             />
-            Gemini (Feasibility)
+            Gemini
           </label>
           <label className="toggle-chip">
             <input
@@ -122,7 +158,16 @@ export const MissionControl: React.FC<MissionControlProps> = ({
               onChange={() => toggleProvider('deepseek')}
               disabled={session.running}
             />
-            DeepSeek (Code Spec)
+            DeepSeek
+          </label>
+          <label className="toggle-chip">
+            <input
+              type="checkbox"
+              checked={providers.chatgpt}
+              onChange={() => toggleProvider('chatgpt')}
+              disabled={session.running}
+            />
+            ChatGPT
           </label>
           <label className="toggle-chip claude">
             <input
@@ -131,9 +176,42 @@ export const MissionControl: React.FC<MissionControlProps> = ({
               onChange={() => toggleProvider('claude')}
               disabled={session.running}
             />
-            Claude (Auditor)
+            Claude
             <span className="quota-indicator">⚡ Quota Guard</span>
           </label>
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Starting AI (Turn 1 Lead)</label>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <select
+            value={startingProvider}
+            onChange={(e) => setStartingProvider(e.target.value as ProviderId)}
+            disabled={session.running}
+            style={{
+              background: 'var(--bg-base)',
+              color: '#fff',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '6px',
+              padding: '6px 10px',
+              fontSize: '12px',
+              flex: 1,
+            }}
+          >
+            {activeProviderList.map((id) => {
+              const st = session.providerStates[id]?.status;
+              const statusLabel = st ? ` [${st.replace(/_/g, ' ').toUpperCase()}]` : '';
+              return (
+                <option key={id} value={id}>
+                  {providerNames[id]} {statusLabel}
+                </option>
+              );
+            })}
+          </select>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+            Workflow: Open Collaboration
+          </span>
         </div>
       </div>
 

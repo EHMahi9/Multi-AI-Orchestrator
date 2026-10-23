@@ -28,6 +28,7 @@ export class GeminiAdapter extends BaseProviderAdapter {
     const probeResult = await this.evaluate<{
       hasLoginButton: boolean;
       hasPromptInput: boolean;
+      hasAuthShell: boolean;
       isRateLimited: boolean;
       rateLimitMessage?: string;
     }>(`
@@ -53,7 +54,20 @@ export class GeminiAdapter extends BaseProviderAdapter {
           return el && (el.offsetWidth > 0 || el.offsetHeight > 0);
         });
 
-        // 3. Rate Limit / Quota Detection
+        // 3. Authenticated Google Shell Detection
+        const authShellSelectors = [
+          'a[href*="accounts.google.com/SignOutOptions"]',
+          'img[alt*="Google Account"]',
+          '.gb_d',
+          '.gb_A',
+          'chat-window'
+        ];
+        const hasAuthShell = authShellSelectors.some(sel => {
+          const el = document.querySelector(sel);
+          return el && (el.offsetWidth > 0 || el.offsetHeight > 0);
+        });
+
+        // 4. Rate Limit / Quota Detection
         const bodyText = document.body ? document.body.innerText : '';
         const isRateLimited = bodyText.includes('You have reached your limit') ||
           bodyText.includes('temporarily unavailable') ||
@@ -62,6 +76,7 @@ export class GeminiAdapter extends BaseProviderAdapter {
         return {
           hasLoginButton,
           hasPromptInput,
+          hasAuthShell,
           isRateLimited,
           rateLimitMessage: isRateLimited ? 'Gemini quota or rate limit detected' : undefined
         };
@@ -78,13 +93,18 @@ export class GeminiAdapter extends BaseProviderAdapter {
     }
 
     if (probeResult.hasPromptInput) {
-      this.setStatus('ready', 'Authenticated and ready.');
+      this.setStatus('ready', 'Composer and submission controls verified ready.');
       return 'ready';
     }
 
     if (probeResult.hasLoginButton) {
       this.setStatus('login_required', 'Google sign in required to use Gemini.');
       return 'login_required';
+    }
+
+    if (probeResult.hasAuthShell) {
+      this.setStatus('authenticated', 'Session authenticated; waiting for composer and submission controls to become interactive.');
+      return 'authenticated';
     }
 
     this.setStatus('not_configured', 'Waiting for Gemini interface to stabilize...');

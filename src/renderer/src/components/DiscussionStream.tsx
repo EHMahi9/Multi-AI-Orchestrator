@@ -87,51 +87,70 @@ export const DiscussionStream: React.FC<DiscussionStreamProps> = ({ session }) =
     );
   }
 
+  const activeProviders = (Object.keys(session.selectedProviders) as ProviderId[]).filter(
+    (id) => session.selectedProviders[id]
+  );
+  let starter = session.startingProvider;
+  if (!starter || !session.selectedProviders[starter]) {
+    starter = activeProviders[0] || 'gemini';
+  }
+  const orderedPreview: ProviderId[] = [
+    starter,
+    ...activeProviders.filter((id) => id !== starter),
+  ];
+
+  const providerNames: Record<ProviderId, string> = {
+    chatgpt: 'ChatGPT',
+    gemini: 'Gemini',
+    deepseek: 'DeepSeek',
+    claude: 'Claude',
+  };
+
   return (
     <div className="debate-feed" style={{ overflowY: 'auto', flex: 1, padding: '12px' }}>
       {idea ? (
         <>
-          <div className="card chatgpt" style={{ marginBottom: '12px' }}>
-            <div className="card-header" style={{ color: 'var(--accent-chatgpt)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>TURN 1: CHATGPT (Lead Architect)</span>
-              <span>{running ? 'Starting...' : 'Standing By'}</span>
-            </div>
-            <div className="card-body" style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              {running
-                ? `Ready to generate architectural plan and system decomposition for: "${idea.slice(0, 80)}..."`
-                : 'Click "Start Autonomous Pipeline" in Mission Control to begin cross-model debate.'}
-            </div>
-          </div>
+          {orderedPreview.map((id, index) => {
+            const turnNum = index + 1;
+            const isLead = index === 0;
+            const isLast = index === orderedPreview.length - 1;
+            const role =
+              orderedPreview.length === 1
+                ? 'Autonomous Architect & Synthesizer'
+                : isLead
+                ? 'Lead Architect'
+                : isLast
+                ? 'Implementation Synthesizer'
+                : 'Collaborative Reviewer';
 
-          <div className="card gemini" style={{ marginBottom: '12px' }}>
-            <div className="card-header" style={{ color: 'var(--accent-gemini)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>TURN 2: GEMINI (Feasibility Reviewer)</span>
-              <span>Queued</span>
-            </div>
-            <div className="card-body" style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Critiques proposed architecture, edge cases, and UI/UX feasibility risks.
-            </div>
-          </div>
+            const description =
+              orderedPreview.length === 1
+                ? 'Will generate solution architecture, modular breakdown, and synthesize schema 1.0 Decision Packet.'
+                : isLead
+                ? running
+                  ? `Ready to generate architectural plan and system decomposition for: "${idea.slice(0, 80)}..."`
+                  : 'Will propose solution architecture, modular breakdown, and decisions.'
+                : isLast
+                ? 'Will synthesize peer discussion into concrete tasks and schema 1.0 Decision Packet.'
+                : 'Will review preceding proposal, critique feasibility, and contribute enhancements.';
 
-          <div className="card deepseek" style={{ marginBottom: '12px' }}>
-            <div className="card-header" style={{ color: 'var(--accent-deepseek)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>TURN 3: DEEPSEEK (Implementation Planner)</span>
-              <span>Queued</span>
-            </div>
-            <div className="card-body" style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Synthesizes plan into strict schema 1.0 Decision Packet with files, types, and test commands.
-            </div>
-          </div>
-
-          <div className="card claude" style={{ marginBottom: '12px' }}>
-            <div className="card-header" style={{ color: 'var(--accent-claude)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>TURN 4: CLAUDE (Safety Auditor - Quota Guard)</span>
-              <span>Opt-In Only</span>
-            </div>
-            <div className="card-body" style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Audits plan for security holes and subtle regressions without burning free quotas prematurely.
-            </div>
-          </div>
+            return (
+              <div key={id} className={`card ${id}`} style={{ marginBottom: '12px' }}>
+                <div
+                  className="card-header"
+                  style={{ color: getProviderColor(id), display: 'flex', justifyContent: 'space-between' }}
+                >
+                  <span>
+                    TURN {turnNum}: {providerNames[id].toUpperCase()} ({role})
+                  </span>
+                  <span>{isLead && running ? 'Starting...' : isLead ? 'Standing By' : 'Queued'}</span>
+                </div>
+                <div className="card-body" style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  {description}
+                </div>
+              </div>
+            );
+          })}
         </>
       ) : (
         <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 20px', fontStyle: 'italic' }}>
