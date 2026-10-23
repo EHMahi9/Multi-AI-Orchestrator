@@ -1,14 +1,30 @@
 {
-  "name": "multi-ai-orchestrator",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "multi-ai-controller-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-AI Autonomous Development Controller (Electron Desktop)",
+  "main": "dist-electron/main/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build:renderer": "vite build",
+    "build:main": "tsc -p tsconfig.node.json",
+    "build": "npm run build:renderer && npm run build:main",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "test": "node --test tests/smoke.test.mjs",
+    "start": "electron ."
   },
-  "keywords": [],
-  "type": "commonjs",
   "dependencies": {
-    "puppeteer-core": "^25.16.0"
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^34.0.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
   }
 }
