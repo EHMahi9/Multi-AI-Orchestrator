@@ -61,6 +61,11 @@ export abstract class BaseProviderAdapter {
       return;
     }
 
+    // Safety guard for unit test environments where Electron native session is unavailable
+    if (!session || typeof session.fromPartition !== 'function') {
+      return;
+    }
+
     const providerSession = session.fromPartition(this.partition, { cache: true });
 
     // Use a clean, standard Chrome desktop user agent (stripping Electron/x.x token)

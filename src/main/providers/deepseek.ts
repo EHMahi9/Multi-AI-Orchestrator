@@ -9,8 +9,10 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
 
   public async checkStatus(): Promise<ProviderStatusType> {
     if (!this.window || this.window.isDestroyed()) {
-      this.setStatus('not_configured', 'Window not initialized');
-      return 'not_configured';
+      await this.initialize();
+    }
+    if (!this.window || this.window.isDestroyed()) {
+      return this.status;
     }
 
     const probeResult = await this.evaluate<{
@@ -146,7 +148,7 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
         if (nativeSetter) {
           nativeSetter.call(input, ${JSON.stringify(prompt)});
         } else {
-          (input as HTMLTextAreaElement).value = ${JSON.stringify(prompt)};
+          input.value = ${JSON.stringify(prompt)};
         }
         input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: ${JSON.stringify(prompt)} }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -186,7 +188,7 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
                 targetBtn = btn;
                 const isDisabled = btn.hasAttribute('disabled') || btn.getAttribute('aria-disabled') === 'true';
                 if (!isDisabled) {
-                  (btn as HTMLElement).click();
+                  btn.click();
                   resolve({ ok: true });
                   return;
                 }
@@ -195,7 +197,7 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
 
             // Fallback: Dispatch Enter key event on the textarea
             const input = document.querySelector('#chat-input') || document.querySelector('textarea');
-            if (input && ((input as HTMLTextAreaElement).value || '').trim().length > 0) {
+            if (input && (input.value || '').trim().length > 0) {
               input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
               input.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
               resolve({ ok: true, via: 'enter_key' });
@@ -206,7 +208,7 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
               setTimeout(checkSend, 150);
             } else {
               if (targetBtn) {
-                (targetBtn as HTMLElement).click();
+                targetBtn.click();
                 resolve({ ok: true });
               } else {
                 resolve({ ok: false, error: 'DeepSeek send button not found or remained disabled after 3s.' });
@@ -249,7 +251,7 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
           ];
           const isStreaming = stopSelectors.some((sel) => {
             const el = document.querySelector(sel);
-            return !!el && ((el as HTMLElement).offsetWidth > 0 || (el as HTMLElement).offsetHeight > 0);
+            return !!el && (el.offsetWidth > 0 || el.offsetHeight > 0);
           });
 
           // Locate latest assistant message bubble (.ds-markdown)
@@ -271,7 +273,7 @@ export class DeepSeekAdapter extends BaseProviderAdapter {
 
           let text = '';
           if (lastBubble) {
-            text = (lastBubble as HTMLElement).innerText || lastBubble.textContent || '';
+            text = lastBubble.innerText || lastBubble.textContent || '';
           }
 
           // Check for completion action buttons in DeepSeek

@@ -12,8 +12,10 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
 
   public async checkStatus(): Promise<ProviderStatusType> {
     if (!this.window || this.window.isDestroyed()) {
-      this.setStatus('not_configured', 'Window not initialized');
-      return 'not_configured';
+      await this.initialize();
+    }
+    if (!this.window || this.window.isDestroyed()) {
+      return this.status;
     }
 
     const currentUrl = this.window.webContents.getURL() || '';
@@ -242,7 +244,7 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
           ];
           const isStreaming = stopSelectors.some((sel) => {
             const el = document.querySelector(sel);
-            return !!el && ((el as HTMLElement).offsetWidth > 0 || (el as HTMLElement).offsetHeight > 0);
+            return !!el && (el.offsetWidth > 0 || el.offsetHeight > 0);
           });
 
           // Find the latest assistant message
@@ -265,7 +267,7 @@ export class ChatGPTAdapter extends BaseProviderAdapter {
 
           let text = '';
           if (lastBubble) {
-            text = (lastBubble as HTMLElement).innerText || lastBubble.textContent || '';
+            text = lastBubble.innerText || lastBubble.textContent || '';
           }
 
           // Check for completion action buttons (Copy turn action button, thumbs up/down, share)

@@ -9,8 +9,10 @@ export class GeminiAdapter extends BaseProviderAdapter {
 
   public async checkStatus(): Promise<ProviderStatusType> {
     if (!this.window || this.window.isDestroyed()) {
-      this.setStatus('not_configured', 'Window not initialized');
-      return 'not_configured';
+      await this.initialize();
+    }
+    if (!this.window || this.window.isDestroyed()) {
+      return this.status;
     }
 
     const currentUrl = this.window.webContents.getURL();
@@ -183,7 +185,7 @@ export class GeminiAdapter extends BaseProviderAdapter {
                 targetBtn = btn;
                 const isDisabled = btn.hasAttribute('disabled') || btn.getAttribute('aria-disabled') === 'true';
                 if (!isDisabled) {
-                  (btn as HTMLElement).click();
+                  btn.click();
                   resolve({ ok: true });
                   return;
                 }
@@ -194,7 +196,7 @@ export class GeminiAdapter extends BaseProviderAdapter {
               setTimeout(checkSend, 150);
             } else {
               if (targetBtn) {
-                (targetBtn as HTMLElement).click();
+                targetBtn.click();
                 resolve({ ok: true });
               } else {
                 resolve({ ok: false, error: 'Gemini send button not found or remained disabled after 3s.' });
@@ -239,7 +241,7 @@ export class GeminiAdapter extends BaseProviderAdapter {
           ];
           const isStreaming = stopSelectors.some((sel) => {
             const el = document.querySelector(sel);
-            return !!el && ((el as HTMLElement).offsetWidth > 0 || (el as HTMLElement).offsetHeight > 0);
+            return !!el && (el.offsetWidth > 0 || el.offsetHeight > 0);
           });
 
           // Locate latest model response bubble
@@ -266,7 +268,7 @@ export class GeminiAdapter extends BaseProviderAdapter {
           let text = '';
           if (lastResponse) {
             const markdownEl = lastResponse.querySelector('.markdown') || lastResponse;
-            text = (markdownEl as HTMLElement).innerText || markdownEl.textContent || '';
+            text = markdownEl.innerText || markdownEl.textContent || '';
           }
 
           // Check for completion action buttons in Gemini (copy, thumbs up/down, share)

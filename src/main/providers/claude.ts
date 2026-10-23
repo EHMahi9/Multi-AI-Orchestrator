@@ -16,6 +16,9 @@ export class ClaudeAdapter extends BaseProviderAdapter {
 
   public async checkStatus(): Promise<ProviderStatusType> {
     if (!this.window || this.window.isDestroyed()) {
+      await this.initialize();
+    }
+    if (!this.window || this.window.isDestroyed()) {
       return this.status;
     }
 
@@ -185,7 +188,7 @@ export class ClaudeAdapter extends BaseProviderAdapter {
           ];
           const isStreaming = stopSelectors.some((sel) => {
             const el = document.querySelector(sel);
-            return !!el && ((el as HTMLElement).offsetWidth > 0 || (el as HTMLElement).offsetHeight > 0);
+            return !!el && (el.offsetWidth > 0 || el.offsetHeight > 0);
           });
 
           // Locate latest assistant response bubble using modern Claude DOM selectors
@@ -211,7 +214,7 @@ export class ClaudeAdapter extends BaseProviderAdapter {
           let text = '';
           if (lastBubble) {
             const textContainer = lastBubble.querySelector('.standard-markdown, .markdown, [data-perf-reply-text], .prose') || lastBubble;
-            text = (textContainer as HTMLElement).innerText || textContainer.textContent || '';
+            text = textContainer.innerText || textContainer.textContent || '';
           }
 
           // Check for completion action buttons (Copy, Retry, Thumbs up/down)

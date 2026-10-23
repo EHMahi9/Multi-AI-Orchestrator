@@ -441,25 +441,28 @@ app.whenReady().then(async () => {
     }
   });
 
-  // Periodic background status check for active unauthenticated windows
+  // Proactively warm up provider sessions in the background
+  for (const id of ['chatgpt', 'gemini', 'deepseek', 'claude'] as ProviderId[]) {
+    const prov = providerManager.getProvider(id);
+    if (prov) {
+      prov.initialize().catch((err) => {
+        console.warn(`[Main] Background initialization warning for ${id}:`, err);
+      });
+    }
+  }
+
+  // Periodic background status check for all active provider windows
   setInterval(() => {
-    for (const id of ['chatgpt', 'gemini', 'deepseek'] as ProviderId[]) {
+    for (const id of ['chatgpt', 'gemini', 'deepseek', 'claude'] as ProviderId[]) {
       const prov = providerManager.getProvider(id);
       if (prov) {
-        const currentStatus = prov.getState().status;
-        if (
-          currentStatus === 'not_configured' ||
-          currentStatus === 'login_required' ||
-          currentStatus === 'manual_intervention_required'
-        ) {
-          prov
-            .checkStatus()
-            .then(() => {
-              sessionState.providerStates[id] = prov.getState();
-              broadcastState();
-            })
-            .catch(() => {});
-        }
+        prov
+          .checkStatus()
+          .then(() => {
+            sessionState.providerStates[id] = prov.getState();
+            broadcastState();
+          })
+          .catch(() => {});
       }
     }
   }, 4000);
