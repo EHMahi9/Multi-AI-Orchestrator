@@ -94,6 +94,12 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleClearSession = async (id: ProviderId) => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      await window.electronAPI.clearProviderSession(id);
+    }
+  };
+
   const handleCheckStatus = async (id: ProviderId) => {
     if (typeof window !== 'undefined' && window.electronAPI) {
       const state = await window.electronAPI.checkProviderStatus(id);
@@ -177,7 +183,7 @@ export const App: React.FC = () => {
 
   return (
     <>
-      <Titlebar session={session} onOpenLogin={handleOpenLogin} />
+      <Titlebar session={session} onOpenLogin={handleOpenLogin} onClearSession={handleClearSession} />
       <main className="workspace">
         <aside className="mission-column">
           <div className="section-header">

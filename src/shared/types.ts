@@ -277,6 +277,7 @@ export interface IElectronAPI {
   rejectCorrection: () => Promise<{ ok: boolean }>;
   openProviderLogin: (providerId: ProviderId) => Promise<boolean>;
   checkProviderStatus: (providerId: ProviderId) => Promise<ProviderState>;
+  clearProviderSession: (providerId: ProviderId) => Promise<boolean>;
   sendProviderPrompt: (
     providerId: ProviderId,
     prompt: string

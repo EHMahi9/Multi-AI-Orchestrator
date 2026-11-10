@@ -150,6 +150,14 @@ ipcMain.handle('provider:open-login', async (_event, providerId: ProviderId): Pr
   return result;
 });
 
+ipcMain.handle('provider:clear-session', async (_event, providerId: ProviderId): Promise<boolean> => {
+  const result = await providerManager.clearSession(providerId);
+  const state = await providerManager.checkStatus(providerId);
+  sessionState.providerStates[providerId] = state;
+  broadcastState();
+  return result;
+});
+
 ipcMain.handle('provider:check-status', async (_event, providerId: ProviderId): Promise<ProviderState> => {
   const state = await providerManager.checkStatus(providerId);
   sessionState.providerStates[providerId] = state;

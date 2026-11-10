@@ -1,4 +1,4 @@
-import { BrowserWindow, session, app } from 'electron';
+import { BrowserWindow, session, app, Menu, MenuItem } from 'electron';
 import type { ProviderId, ProviderState, ProviderStatusType } from '../../shared/types';
 
 export abstract class BaseProviderAdapter {
@@ -99,6 +99,39 @@ export abstract class BaseProviderAdapter {
       }
     });
 
+    // Context menu for interactive provider windows (Reload, Go to Home, Reset Session)
+    this.window.webContents.on('context-menu', (_e, params) => {
+      if (!this.window || this.window.isDestroyed()) return;
+      const menu = new Menu();
+      menu.append(new MenuItem({
+        label: 'Reload Page (F5)',
+        click: () => this.window?.webContents.reload()
+      }));
+      menu.append(new MenuItem({
+        label: `Go to ${this.name} Home`,
+        click: () => this.window?.loadURL(this.loginUrl)
+      }));
+      if (this.id === 'chatgpt') {
+        menu.append(new MenuItem({
+          label: 'Go to ChatGPT Direct Login',
+          click: () => this.window?.loadURL('https://chatgpt.com/auth/login')
+        }));
+      }
+      menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(new MenuItem({
+        label: 'Clear Session & Log in Fresh (Reset Cookies)',
+        click: async () => {
+          await this.clearSession();
+        }
+      }));
+      menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(new MenuItem({
+        label: 'Inspect Element (DevTools)',
+        click: () => this.window?.webContents.inspectElement(params.x, params.y)
+      }));
+      menu.popup();
+    });
+
     this.window.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
       console.warn(`[${this.id}] Page load failed (${errorCode}): ${errorDescription}`);
       this.setStatus('error', `Failed to load (${errorCode}): ${errorDescription}`);
@@ -152,6 +185,26 @@ export abstract class BaseProviderAdapter {
   public hideWindow(): void {
     if (this.window && !this.window.isDestroyed()) {
       this.window.hide();
+    }
+  }
+
+  /**
+   * Clears cookies and storage for this provider partition, resetting it for a fresh login.
+   */
+  public async clearSession(): Promise<void> {
+    if (this.window && !this.window.isDestroyed()) {
+      const ses = this.window.webContents.session;
+      await ses.clearStorageData({
+        storages: ['cookies', 'localstorage', 'indexdb', 'websql', 'serviceworkers', 'cachestorage']
+      });
+      await this.window.loadURL(this.loginUrl);
+      this.setStatus('login_required', 'Session cleared. Ready for fresh login.');
+      this.window.show();
+      this.window.focus();
+    } else if (session && typeof session.fromPartition === 'function') {
+      const provSession = session.fromPartition(this.partition, { cache: true });
+      await provSession.clearStorageData();
+      this.setStatus('login_required', 'Session cleared. Ready for fresh login.');
     }
   }
 

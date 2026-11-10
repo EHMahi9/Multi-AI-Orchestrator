@@ -4,14 +4,22 @@ import type { OrchestratorSessionState, ProviderId } from '../../../shared/types
 interface TitlebarProps {
   session: OrchestratorSessionState;
   onOpenLogin?: (id: ProviderId) => void;
+  onClearSession?: (id: ProviderId) => void;
 }
 
-export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin }) => {
+export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin, onClearSession }) => {
   const { providerStates, cliTool } = session;
 
   const getStatusTitle = (id: ProviderId, name: string) => {
     const st = providerStates[id];
-    return `${name}: ${st.status.replace('_', ' ').toUpperCase()}${st.lastMessage ? ` - ${st.lastMessage}` : ''} (Click to open session window)`;
+    return `${name}: ${st.status.replace('_', ' ').toUpperCase()}${st.lastMessage ? ` - ${st.lastMessage}` : ''}\n• Left-click to open session window\n• Right-click to reset & clear cookies`;
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, id: ProviderId, name: string) => {
+    e.preventDefault();
+    if (window.confirm(`Clear session and reset cookies for ${name}? This will allow you to sign in with a new account.`)) {
+      onClearSession?.(id);
+    }
   };
 
   return (
@@ -24,6 +32,7 @@ export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin }) => {
         <div
           className={`model-pill status-${providerStates.chatgpt.status}`}
           onClick={() => onOpenLogin?.('chatgpt')}
+          onContextMenu={(e) => handleContextMenu(e, 'chatgpt', 'ChatGPT')}
           title={getStatusTitle('chatgpt', 'ChatGPT')}
         >
           <span className="dot"></span> ChatGPT
@@ -31,6 +40,7 @@ export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin }) => {
         <div
           className={`model-pill status-${providerStates.gemini.status}`}
           onClick={() => onOpenLogin?.('gemini')}
+          onContextMenu={(e) => handleContextMenu(e, 'gemini', 'Gemini')}
           title={getStatusTitle('gemini', 'Gemini')}
         >
           <span className="dot"></span> Gemini
@@ -38,6 +48,7 @@ export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin }) => {
         <div
           className={`model-pill status-${providerStates.deepseek.status}`}
           onClick={() => onOpenLogin?.('deepseek')}
+          onContextMenu={(e) => handleContextMenu(e, 'deepseek', 'DeepSeek')}
           title={getStatusTitle('deepseek', 'DeepSeek')}
         >
           <span className="dot"></span> DeepSeek
@@ -45,6 +56,7 @@ export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin }) => {
         <div
           className={`model-pill status-${providerStates.claude.status}`}
           onClick={() => onOpenLogin?.('claude')}
+          onContextMenu={(e) => handleContextMenu(e, 'claude', 'Claude')}
           title={getStatusTitle('claude', 'Claude (Quota Guard)')}
         >
           <span className="dot"></span> Claude

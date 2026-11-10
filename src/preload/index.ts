@@ -36,6 +36,7 @@ const api: IElectronAPI = {
 
   openProviderLogin: (providerId: ProviderId) => ipcRenderer.invoke('provider:open-login', providerId),
   checkProviderStatus: (providerId: ProviderId) => ipcRenderer.invoke('provider:check-status', providerId),
+  clearProviderSession: (providerId: ProviderId) => ipcRenderer.invoke('provider:clear-session', providerId),
   sendProviderPrompt: (providerId: ProviderId, prompt: string) => {
     if (!providerId || typeof prompt !== 'string') {
       return Promise.resolve({ ok: false, error: 'Invalid prompt arguments.' });

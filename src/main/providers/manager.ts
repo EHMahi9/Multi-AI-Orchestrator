@@ -75,6 +75,15 @@ export class ProviderSessionManager {
     return true;
   }
 
+  public async clearSession(id: ProviderId): Promise<boolean> {
+    const provider = this.providers.get(id);
+    if (!provider) {
+      return false;
+    }
+    await provider.clearSession();
+    return true;
+  }
+
   public async checkStatus(id: ProviderId): Promise<ProviderState> {
     const provider = this.providers.get(id);
     if (!provider) {
