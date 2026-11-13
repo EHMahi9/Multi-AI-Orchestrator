@@ -3,6 +3,7 @@ import { Titlebar } from './components/Titlebar';
 import { MissionControl } from './components/MissionControl';
 import { DiscussionStream } from './components/DiscussionStream';
 import { ExecutionPanel } from './components/ExecutionPanel';
+import { GlossaryModal } from './components/GlossaryModal';
 import type { OrchestratorSessionState, ProviderId } from '../../shared/types';
 
 const defaultSession: OrchestratorSessionState = {
@@ -46,6 +47,8 @@ const defaultSession: OrchestratorSessionState = {
 export const App: React.FC = () => {
   const [session, setSession] = useState<OrchestratorSessionState>(defaultSession);
   const [logs, setLogs] = useState<string>('');
+  const [glossaryOpen, setGlossaryOpen] = useState<boolean>(false);
+  const [glossaryTermId, setGlossaryTermId] = useState<string | null>(null);
 
   useEffect(() => {
     // Connect to Electron IPC if running inside Electron desktop container
@@ -118,7 +121,8 @@ export const App: React.FC = () => {
     workspace: string,
     providers: Record<ProviderId, boolean>,
     startingProvider: ProviderId,
-    maxRetries: number
+    maxRetries: number,
+    language?: 'en' | 'bn' | 'bilingual'
   ) => {
     if (typeof window !== 'undefined' && window.electronAPI) {
       const res = await window.electronAPI.startPipeline({
@@ -127,6 +131,7 @@ export const App: React.FC = () => {
         providers,
         startingProvider,
         maxRetries,
+        language,
       });
       if (!res.ok) {
         alert(`Could not start pipeline: ${res.error || 'Unknown error'}`);
@@ -195,6 +200,10 @@ export const App: React.FC = () => {
         onOpenLogin={handleOpenLogin}
         onClearSession={handleClearSession}
         onToggleShowcase={handleToggleShowcase}
+        onOpenGlossary={() => {
+          setGlossaryTermId(null);
+          setGlossaryOpen(true);
+        }}
       />
       <main className="workspace">
         <aside className="mission-column">
@@ -226,8 +235,17 @@ export const App: React.FC = () => {
           onRunApproved={handleRunApproved}
           onApproveCorrection={handleApproveCorrection}
           onRejectCorrection={handleRejectCorrection}
+          onOpenGlossaryTerm={(termId: string) => {
+            setGlossaryTermId(termId);
+            setGlossaryOpen(true);
+          }}
         />
       </main>
+      <GlossaryModal
+        isOpen={glossaryOpen}
+        onClose={() => setGlossaryOpen(false)}
+        initialTermId={glossaryTermId}
+      />
     </>
   );
 };

@@ -239,6 +239,7 @@ export interface OrchestratorSessionState {
   iterationHistory: IterationRecord[];
   finalReportPath: string | null;
   showcaseMode?: boolean;
+  languageMode?: 'en' | 'bn' | 'bilingual';
 }
 
 export interface AppMetadata {
@@ -262,6 +263,7 @@ export interface IElectronAPI {
     providers: Record<ProviderId, boolean>;
     startingProvider?: ProviderId;
     maxRetries?: number;
+    language?: 'en' | 'bn' | 'bilingual';
   }) => Promise<{ ok: boolean; error?: string }>;
   stopPipeline: () => Promise<{ ok: boolean }>;
   pausePipeline: () => Promise<{ ok: boolean }>;

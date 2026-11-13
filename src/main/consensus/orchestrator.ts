@@ -12,6 +12,7 @@ export interface RunConsensusOptions {
   workspace: string;
   selectedProviders: Record<ProviderId, boolean>;
   startingProvider?: ProviderId;
+  language?: 'en' | 'bn' | 'bilingual';
   providerManager: ProviderSessionManager;
   onLog: (chunk: string) => void;
   onTurnUpdate: (turn: ConsensusTurn) => void;
@@ -252,6 +253,11 @@ Review the preceding proposals and feedback:
 2. Security & Edge Cases: What failure modes, regressions, or missing error paths are unaddressed?
 3. Architecture & Modularity: Are module boundaries, APIs, and file responsibilities clean?
 4. Concrete Enhancements: What specific tasks and test requirements must the final plan enforce?`;
+      }
+
+      const isBangla = options.language === 'bn' || /[\u0980-\u09FF]/.test(idea);
+      if (isBangla) {
+        prompt += `\n\n[Language Directive]: Respond in clear, professional Bengali (বাংলা). Keep standard technical identifiers, method names, and code syntax in English (e.g. JWT, HMAC, crypto.timingSafeEqual, TypeScript), but explain architectural rationale, risks, and tasks in natural Bengali.`;
       }
 
       const turnRecord: ConsensusTurn = {

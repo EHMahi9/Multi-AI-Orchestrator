@@ -8,7 +8,8 @@ interface MissionControlProps {
     workspace: string,
     providers: Record<ProviderId, boolean>,
     startingProvider: ProviderId,
-    maxRetries: number
+    maxRetries: number,
+    language?: 'en' | 'bn' | 'bilingual'
   ) => void;
   onStop: () => void;
   onSelectWorkspace: () => void;
@@ -29,6 +30,7 @@ export const MissionControl: React.FC<MissionControlProps> = ({
     session.startingProvider || 'gemini'
   );
   const [maxRetries, setMaxRetries] = useState<number>(session.maxRetries || 3);
+  const [languageMode, setLanguageMode] = useState<'en' | 'bn' | 'bilingual'>('en');
 
   // Sync workspace and startingProvider if updated externally
   useEffect(() => {
@@ -71,7 +73,7 @@ export const MissionControl: React.FC<MissionControlProps> = ({
       actualStarter = active[0];
       setStartingProvider(actualStarter);
     }
-    onStart(idea.trim(), workspace, providers, actualStarter, maxRetries);
+    onStart(idea.trim(), workspace, providers, actualStarter, maxRetries, languageMode);
   };
 
   const providerNames: Record<ProviderId, string> = {
@@ -95,6 +97,25 @@ export const MissionControl: React.FC<MissionControlProps> = ({
     });
     setStartingProvider('chatgpt');
     setMaxRetries(3);
+    setLanguageMode('en');
+    if (!session.showcaseMode && onToggleShowcase) {
+      onToggleShowcase();
+    }
+  };
+
+  const handleLoadBanglaShowcaseScenario = () => {
+    setIdea(
+      'নিরাপদ জিরো-ট্রাস্ট JWT অথেনটিকেশন ও টোকেন বাতিল ইঞ্জিন তৈরি করো যা কনস্ট্যান্ট-টাইম সিগনেচার যাচাই, রেট লিমিটিং ও স্বয়ংক্রিয় টেস্ট নিশ্চিত করবে'
+    );
+    setProviders({
+      chatgpt: true,
+      gemini: true,
+      deepseek: true,
+      claude: true,
+    });
+    setStartingProvider('chatgpt');
+    setMaxRetries(3);
+    setLanguageMode('bn');
     if (!session.showcaseMode && onToggleShowcase) {
       onToggleShowcase();
     }
@@ -102,7 +123,7 @@ export const MissionControl: React.FC<MissionControlProps> = ({
 
   return (
     <div className="mission-form">
-      <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <button
           type="button"
           onClick={handleLoadShowcaseScenario}
@@ -122,19 +143,98 @@ export const MissionControl: React.FC<MissionControlProps> = ({
             width: '100%',
             justifyContent: 'center',
           }}
-          title="Preload the high-impact Zero-Trust Security & QA benchmark scenario"
+          title="Preload the high-impact Zero-Trust Security & QA benchmark scenario (English)"
         >
-          <span>⭐</span> Load SQAT Summit 2026 Live Demo Scenario
+          <span>⭐</span> Load SQAT Live Demo (English)
+        </button>
+
+        <button
+          type="button"
+          onClick={handleLoadBanglaShowcaseScenario}
+          disabled={session.running}
+          style={{
+            background: 'linear-gradient(135deg, #064e3b, #047857)',
+            border: '1px solid #10b981',
+            color: '#a7f3d0',
+            padding: '5px 10px',
+            borderRadius: '6px',
+            fontSize: '11px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            width: '100%',
+            justifyContent: 'center',
+          }}
+          title="মঞ্চে বিচারকদের সামনে দেখানোর জন্য ১-ক্লিকে বাংলা ডেমো লোড করুন"
+        >
+          <span>🇧🇩</span> লোড করুন বাংলা ডেমো সিনারিও (Live Stage)
         </button>
       </div>
 
       <div className="form-group">
-        <label className="form-label">Project Goal / Development Requirement</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+          <label className="form-label" style={{ margin: 0 }}>
+            {languageMode === 'bn' ? 'প্রজেক্টের লক্ষ্য বা রিকোয়ারমেন্ট' : 'Project Goal / Requirement'}
+          </label>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <button
+              type="button"
+              onClick={() => setLanguageMode('en')}
+              style={{
+                padding: '2px 8px',
+                fontSize: '10px',
+                borderRadius: '10px',
+                border: languageMode === 'en' ? '1px solid #38bdf8' : '1px solid #30363d',
+                background: languageMode === 'en' ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+                color: languageMode === 'en' ? '#38bdf8' : '#8b949e',
+                cursor: 'pointer',
+              }}
+            >
+              🌐 English
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguageMode('bn')}
+              style={{
+                padding: '2px 8px',
+                fontSize: '10px',
+                borderRadius: '10px',
+                border: languageMode === 'bn' ? '1px solid #4ade80' : '1px solid #30363d',
+                background: languageMode === 'bn' ? 'rgba(74, 222, 128, 0.2)' : 'transparent',
+                color: languageMode === 'bn' ? '#4ade80' : '#8b949e',
+                cursor: 'pointer',
+              }}
+            >
+              🇧🇩 বাংলা
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguageMode('bilingual')}
+              style={{
+                padding: '2px 8px',
+                fontSize: '10px',
+                borderRadius: '10px',
+                border: languageMode === 'bilingual' ? '1px solid #facc15' : '1px solid #30363d',
+                background: languageMode === 'bilingual' ? 'rgba(250, 204, 21, 0.2)' : 'transparent',
+                color: languageMode === 'bilingual' ? '#facc15' : '#8b949e',
+                cursor: 'pointer',
+              }}
+            >
+              🔄 দ্বিভাষিক
+            </button>
+          </div>
+        </div>
         <textarea
           rows={4}
           value={idea}
           onChange={(e) => setIdea(e.target.value)}
-          placeholder="e.g. Implement a responsive Dark Mode theme toggle in our Next.js header using CSS variables and localStorage persistence. Include automated unit tests."
+          placeholder={
+            languageMode === 'bn'
+              ? 'যেমন: একটি নিরাপদ JWT লগইন ও টোকেন বাতিল সিস্টেম বানাও যাতে টাইমিং অ্যাটাক প্রতিরোধ এবং স্বয়ংক্রিয় টেস্ট থাকে...'
+              : 'e.g. Implement a responsive Dark Mode theme toggle in our Next.js header using CSS variables and localStorage persistence. Include automated unit tests.'
+          }
           disabled={session.running}
         />
       </div>

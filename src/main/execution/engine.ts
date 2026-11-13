@@ -279,7 +279,7 @@ export class ExecutionService {
 
     return {
       success: overallSuccess && !this.cancelled && !this.timedOut,
-      exitCode: finalExitCode,
+      exitCode: this.timedOut ? 124 : (this.cancelled && finalExitCode === 0 ? 130 : finalExitCode),
       stdoutTail: stdoutAccumulator.slice(-1500),
       stderrTail: stderrAccumulator.slice(-1500),
       changedFiles,

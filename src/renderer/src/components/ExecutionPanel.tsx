@@ -12,6 +12,7 @@ interface ExecutionPanelProps {
   onRunApproved?: () => void;
   onApproveCorrection?: () => void;
   onRejectCorrection?: () => void;
+  onOpenGlossaryTerm?: (termId: string) => void;
 }
 
 type TabKey = 'decision' | 'evidence' | 'review' | 'terminal' | 'sqat';
@@ -27,9 +28,11 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
   onRunApproved,
   onApproveCorrection,
   onRejectCorrection,
+  onOpenGlossaryTerm,
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('terminal');
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
+  const [showBeginnerExplainer, setShowBeginnerExplainer] = useState<boolean>(true);
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -150,6 +153,90 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '14px', fontSize: '12.5px', lineHeight: 1.5 }}>
                   {session.decisionPacket.summary}
                 </p>
+
+                {/* Beginner Explainer Mode (ELI5) */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.25) 0%, rgba(15, 23, 42, 0.4) 100%)',
+                  border: '1px solid #10b981',
+                  borderRadius: '8px',
+                  padding: '12px 14px',
+                  marginBottom: '16px',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showBeginnerExplainer ? '10px' : '0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '16px' }}>🎓</span>
+                      <h4 style={{ margin: 0, color: '#34d399', fontSize: '12.5px', fontWeight: 700 }}>
+                        সহজ বাংলায় আর্কিটেকচার ব্যাখ্যা (Beginner & Non-Coder Mode)
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowBeginnerExplainer(!showBeginnerExplainer)}
+                      style={{
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        border: '1px solid #10b981',
+                        color: '#a7f3d0',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '10.5px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {showBeginnerExplainer ? '▼ সংক্ষেপ করুন' : '▶ বিস্তারিত দেখুন'}
+                    </button>
+                  </div>
+
+                  {showBeginnerExplainer && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#e2e8f0', lineHeight: '1.5' }}>
+                      <div>
+                        <strong style={{ color: '#facc15' }}>🎯 এই প্রজেক্টটি কী তৈরি করছে?</strong>
+                        <p style={{ margin: '2px 0 0', color: '#cbd5e1' }}>
+                          ইউজারের পাসওয়ার্ড ও লগইন সুরক্ষার জন্য একটি ডিজিটাল পাসপোর্ট বা টোকেন সিস্টেম তৈরি করা হচ্ছে, যা ব্যবহারকারী লগআউট করলে সাথে সাথে বাতিল হয়ে যায়।
+                        </p>
+                      </div>
+
+                      <div>
+                        <strong style={{ color: '#f87171' }}>🛡️ কী ধরনের ঝুঁকি বা সাইবার আক্রমণ ঠেকানো হচ্ছে?</strong>
+                        <p style={{ margin: '2px 0 0', color: '#cbd5e1' }}>
+                          <strong>১. টাইমিং অ্যাটাক:</strong> চোর যেন তালা খোলার সময় মেপে পাসওয়ার্ডের অক্ষর অনুমান করতে না পারে (কনস্ট্যান্ট-টাইম চেক)।<br />
+                          <strong>২. টোকেন চুরি:</strong> কেউ চুরি করা টোকেন ব্যবহার করতে গেলে ব্ল্যাকলিস্ট ক্যাশ দিয়ে সাথে সাথে আটকে দেওয়া।
+                        </p>
+                      </div>
+
+                      <div>
+                        <strong style={{ color: '#60a5fa' }}>💡 বাস্তব জীবনের সহজ তুলনা (Analogy):</strong>
+                        <p style={{ margin: '2px 0 0', color: '#cbd5e1' }}>
+                          সিনেমা হলের কিউআর কোড টিকিটের মতো। টিকিট স্ক্যানার প্রতিবার টিকিট চেক করে দেখবে আসল কিনা এবং শো শেষ হলে বা টিকিট ফেরত দিলে সাথে সাথে লিস্টে 'বাতিল' মার্ক করবে।
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>জটিল টার্ম শিখুন:</span>
+                        <button
+                          type="button"
+                          onClick={() => onOpenGlossaryTerm?.('timing-attack')}
+                          style={{ background: '#1e293b', border: '1px solid #475569', color: '#38bdf8', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                          🔍 Timing Attack কী?
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onOpenGlossaryTerm?.('jwt')}
+                          style={{ background: '#1e293b', border: '1px solid #475569', color: '#38bdf8', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                          🔍 JWT কী?
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onOpenGlossaryTerm?.('quorum-consensus')}
+                          style={{ background: '#1e293b', border: '1px solid #475569', color: '#38bdf8', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                          🔍 Quorum Consensus কী?
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <h4 style={{ color: 'var(--accent-antigravity)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>
                   Agreed Architectural Decisions:

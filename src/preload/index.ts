@@ -13,6 +13,7 @@ const api: IElectronAPI = {
     providers: Record<ProviderId, boolean>;
     startingProvider?: ProviderId;
     maxRetries?: number;
+    language?: 'en' | 'bn' | 'bilingual';
   }) => {
     // Basic argument validation before passing to IPC
     if (!params || typeof params.idea !== 'string') {

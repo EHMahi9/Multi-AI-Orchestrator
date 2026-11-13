@@ -70,9 +70,17 @@ export class CliResolver {
       const ver = await this.queryVersion(candidate);
       if (ver) {
         const name = candidate.includes('gemini') ? 'gemini' : 'agy';
+        let resolvedPath = candidate;
+        if (!fs.existsSync(resolvedPath)) {
+          if (npmGlobalDir && fs.existsSync(path.join(npmGlobalDir, `${candidate}.cmd`))) {
+            resolvedPath = path.join(npmGlobalDir, `${candidate}.cmd`);
+          } else if (npmGlobalDir && fs.existsSync(path.join(npmGlobalDir, candidate))) {
+            resolvedPath = path.join(npmGlobalDir, candidate);
+          }
+        }
         return {
           name,
-          executablePath: candidate,
+          executablePath: resolvedPath,
           version: ver,
           available: true,
         };
@@ -90,7 +98,7 @@ export class CliResolver {
 
   private queryVersion(cliPath: string): Promise<string | null> {
     return new Promise((resolve) => {
-      exec(`"${cliPath}" --version`, { timeout: 5000 }, (err, stdout) => {
+      exec(`"${cliPath}" --version`, { timeout: 10000 }, (err, stdout) => {
         if (!err && stdout && stdout.trim()) {
           // First line of output is version number (e.g. 0.60.0)
           const lines = stdout.trim().split('\n');

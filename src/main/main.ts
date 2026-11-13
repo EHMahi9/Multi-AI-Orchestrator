@@ -221,6 +221,7 @@ ipcMain.handle('pipeline:start', async (_event, params: {
   providers: Record<ProviderId, boolean>;
   startingProvider?: ProviderId;
   maxRetries?: number;
+  language?: 'en' | 'bn' | 'bilingual';
 }) => {
   if (sessionState.running) {
     return { ok: false, error: 'Pipeline is already running.' };
@@ -244,6 +245,7 @@ ipcMain.handle('pipeline:start', async (_event, params: {
   if (params.startingProvider) {
     sessionState.startingProvider = params.startingProvider;
   }
+  sessionState.languageMode = params.language || (/[\u0980-\u09FF]/.test(params.idea) ? 'bn' : 'en');
   sessionState.consensusTurns = [];
   sessionState.decisionPacket = null;
   sessionState.maxRetries = params.maxRetries || 3;
@@ -259,6 +261,7 @@ ipcMain.handle('pipeline:start', async (_event, params: {
         workspace: sessionState.workspace,
         selectedProviders: sessionState.selectedProviders,
         startingProvider: sessionState.startingProvider,
+        language: sessionState.languageMode,
         providerManager,
         onLog: (chunk) => broadcastLog(chunk),
         onTurnUpdate: (turn) => {

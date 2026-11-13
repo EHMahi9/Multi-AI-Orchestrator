@@ -7,9 +7,10 @@ interface TitlebarProps {
   onOpenLogin?: (id: ProviderId) => void;
   onClearSession?: (id: ProviderId) => void;
   onToggleShowcase?: () => void;
+  onOpenGlossary?: () => void;
 }
 
-export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin, onClearSession, onToggleShowcase }) => {
+export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin, onClearSession, onToggleShowcase, onOpenGlossary }) => {
   const { providerStates, cliTool } = session;
 
   const getStatusTitle = (id: ProviderId, name: string) => {
@@ -80,6 +81,20 @@ export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin, onClea
         >
           <span className="dot" style={{ background: session.showcaseMode ? '#facc15' : 'var(--text-muted)' }}></span>
           {session.showcaseMode ? '⚡ SQAT SHOWCASE: ACTIVE' : '⚡ Showcase Mode'}
+        </div>
+        <div
+          className="model-pill active"
+          style={{
+            cursor: 'pointer',
+            borderColor: '#38bdf8',
+            background: 'rgba(56, 189, 248, 0.12)',
+            color: '#38bdf8',
+            fontWeight: 600,
+          }}
+          onClick={onOpenGlossary}
+          title="Click to open Beginner SWE & AI Concept Glossary (সহজ শব্দকোষ)"
+        >
+          📖 সহজ শব্দকোষ
         </div>
       </div>
     </header>

@@ -4,7 +4,14 @@ import { ChatGPTAdapter } from './chatgpt';
 import { GeminiAdapter } from './gemini';
 import { DeepSeekAdapter } from './deepseek';
 import { ClaudeAdapter } from './claude';
-import { SHOWCASE_TURNS, SHOWCASE_DECISION_PACKET, SHOWCASE_STRUCTURED_REVIEW } from './showcase-data';
+import {
+  SHOWCASE_TURNS,
+  SHOWCASE_DECISION_PACKET,
+  SHOWCASE_STRUCTURED_REVIEW,
+  SHOWCASE_BANGLA_TURNS,
+  SHOWCASE_BANGLA_DECISION_PACKET,
+  SHOWCASE_BANGLA_STRUCTURED_REVIEW,
+} from './showcase-data';
 import type { ProviderId, ProviderState, ProviderStatusType } from '../../shared/types';
 
 export class ProviderSessionManager {
@@ -155,20 +162,24 @@ export class ProviderSessionManager {
       // Realistic autonomous response timing for stage presentation
       await new Promise((resolve) => setTimeout(resolve, 1400));
 
+      const isBangla = /[\u0980-\u09FF]/.test(prompt) || prompt.includes('বাংলা') || prompt.includes('Bangla');
+
       // Handle Review Loop prompt
       if (
         prompt.includes('COLLECTED EXECUTION EVIDENCE') ||
         prompt.includes('AI Peer Reviewer') ||
         prompt.includes('evaluate the evidence')
       ) {
+        const reviewData = isBangla ? SHOWCASE_BANGLA_STRUCTURED_REVIEW : SHOWCASE_STRUCTURED_REVIEW;
         return {
           ok: true,
-          response: '```json\n' + JSON.stringify(SHOWCASE_STRUCTURED_REVIEW, null, 2) + '\n```',
+          response: '```json\n' + JSON.stringify(reviewData, null, 2) + '\n```',
         };
       }
 
       // Handle Turn prompts from showcase data
-      const matchedTurn = SHOWCASE_TURNS.find((t) => t.providerId === id);
+      const turns = isBangla ? SHOWCASE_BANGLA_TURNS : SHOWCASE_TURNS;
+      const matchedTurn = turns.find((t) => t.providerId === id);
       if (matchedTurn) {
         return {
           ok: true,
@@ -177,9 +188,10 @@ export class ProviderSessionManager {
       }
 
       // Fallback valid schema response
+      const fallbackPacket = isBangla ? SHOWCASE_BANGLA_DECISION_PACKET : SHOWCASE_DECISION_PACKET;
       return {
         ok: true,
-        response: '```json\n' + JSON.stringify(SHOWCASE_DECISION_PACKET, null, 2) + '\n```',
+        response: '```json\n' + JSON.stringify(fallbackPacket, null, 2) + '\n```',
       };
     }
 

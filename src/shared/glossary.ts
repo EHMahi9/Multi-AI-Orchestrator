@@ -1,0 +1,138 @@
+export interface GlossaryTerm {
+  id: string;
+  term: string;
+  category: 'Security' | 'Architecture' | 'Quality & Testing' | 'AI & Consensus';
+  englishDef: string;
+  banglaDef: string;
+  realWorldAnalogy: string;
+  whyItMatters: string;
+}
+
+export const SWE_GLOSSARY: GlossaryTerm[] = [
+  {
+    id: 'timing-attack',
+    term: 'Timing Attack & Constant-Time Check',
+    category: 'Security',
+    englishDef: 'A side-channel attack where attackers measure the microsecond response times of signature verification to guess secret keys byte-by-byte.',
+    banglaDef: 'টাইমিং অ্যাটাক হলো চোরের তালা খোলার শব্দের মতো—পাসওয়ার্ডের কয়টি অক্ষর মিলল তা সিস্টেমের রেসপন্স টাইম দেখে অনুমান করা। কনস্ট্যান্ট-টাইম চেক নিশ্চিত করে পাসওয়ার্ড মিলুক বা না মিলুক, সবসময় ঠিক একই সময় লাগবে, যাতে হ্যাকার কিছুই অনুমান করতে না পারে।',
+    realWorldAnalogy: 'দরজায় গোপন কোড দিলে ভুল হলেও ঠিক একই নির্দিষ্ট সেকেন্ড পর "প্রবেশ নিষেধ" বলা—যাতে চোর কতগুলো সংখ্যা সঠিক দিয়েছিলো তা বুঝতে না পারে।',
+    whyItMatters: 'ক্রিপ্টোগ্রাফিক টোকেন হ্যাকিং পুরোপুরি রোধ করার জন্য crypto.timingSafeEqual ব্যবহার করা বাধ্যতামূলক।',
+  },
+  {
+    id: 'jwt',
+    term: 'Zero-Trust JWT Token',
+    category: 'Security',
+    englishDef: 'JSON Web Token carrying cryptographically signed claims, strictly validated on every single request without implicit trust.',
+    banglaDef: 'একটি ডিজিটাল পরিচয়পত্র বা পাসের মতো, যা প্রতিবার ব্যবহারের সময় পরীক্ষা করা হয়। কাউকে আগে থেকে বিশ্বাস না করে প্রতিটি রিকোয়েস্টে পরিচয় ও নিরাপত্তা যাচাই করা।',
+    realWorldAnalogy: 'সিনেমা হলের ডিজিটাল টিকিটের মতো—টিকিটে সিট নম্বর ও শোয়ের সময় লেখা থাকে। গেটের গার্ড বারকোড স্ক্যান করে নিশ্চিত হয় টিকিটটি আসল ও বৈধ কি না।',
+    whyItMatters: 'ইউজার লগইন নিরাপদে পরিচালনা এবং সিস্টেমের নিরাপত্তা অটুট রাখার আধুনিক স্ট্যান্ডার্ড।',
+  },
+  {
+    id: 'token-revocation',
+    term: 'Token Revocation & Blacklisting',
+    category: 'Security',
+    englishDef: 'Mechanism to immediately invalidate active tokens before natural expiration when a user logs out or credentials are compromised.',
+    banglaDef: 'ইউজার লগআউট করলে বা পাসওয়ার্ড চুরি হলে মেয়াদ শেষ হওয়ার আগেই নির্দিষ্ট টোকেনটিকে তাৎক্ষণিকভাবে বাতিল (Blacklist) করার ব্যবস্থা।',
+    realWorldAnalogy: 'ব্যাংক কার্ড হারিয়ে গেলে হেল্পলাইনে কল দিয়ে কার্ডটি সাথে সাথে ব্লক করে দেওয়ার মতো, যাতে কেউ আর তা দিয়ে কেনাকাটা করতে না পারে।',
+    whyItMatters: 'লগআউট করার পরও চুরি হওয়া টোকেন দিয়ে অবৈধ অনুপ্রবেশ রোধ করতে টোকেন রেভোকেশন জরুরি।',
+  },
+  {
+    id: 'quorum-consensus',
+    term: 'Quorum Consensus (AI সম্মতি)',
+    category: 'AI & Consensus',
+    englishDef: 'A voting mechanism requiring a predefined majority of distinct AI models (ChatGPT, Gemini, DeepSeek, Claude) to agree on a technical plan.',
+    banglaDef: 'একাধিক AI মডেলের মধ্যে পারস্পরিক টেকনিক্যাল বিতর্ক ও সংখ্যাগরিষ্ঠের লিখিত সম্মতি। একজন মডেল ভুল প্রস্তাব দিলে বাকিরা তা ধরে ফেলে এবং সংশোধন করে।',
+    realWorldAnalogy: 'জটিল অপারেশনের আগে ৪ জন বিশেষজ্ঞ ডাক্তারের মেডিকেল বোর্ডের আলোচনার মতো—সবাই একমত হলেই কেবল প্রেসক্রিপশন চূড়ান্ত হয়।',
+    whyItMatters: 'একক কোনো AI-এর হেলুসিনেশন বা সিকিউরিটি দুর্বলতা কোডে ঢুকে পড়া বন্ধ করে।',
+  },
+  {
+    id: 'ast-execution',
+    term: 'Zero-Shell AST Execution Policy',
+    category: 'Quality & Testing',
+    englishDef: 'Abstract Syntax Tree parser that decomposes commands into tokens to validate safety without ever invoking an OS command shell.',
+    banglaDef: 'কমান্ড কম্পিউটারে সরাসরি রান না করে আগে তার ব্যাকরণগত গঠন (AST) বিশ্লেষণ করে যাচাই করা। কোনো ক্ষতিকর চিহ্ন (যেমন ;, &&, |, rm -rf) থাকলে তা সরাসরি আটকে দেওয়া।',
+    realWorldAnalogy: 'বিমানবন্দরের এক্স-রে স্ক্যানারের মতো—যাত্রীর ব্যাগে ঝুঁকিপূর্ণ বা অননুমোদিত কোনো বস্তু আছে কিনা আগেই শনাক্ত করা।',
+    whyItMatters: 'ম্যালিশিয়াস কমান্ড ইনজেকশন ঠেকিয়ে ইউজারের পিসি ও কোডবেস সুরক্ষিত রাখে।',
+  },
+  {
+    id: 'self-healing',
+    term: 'Autonomous Self-Healing Review Loop',
+    category: 'Quality & Testing',
+    englishDef: 'A closed feedback loop that analyzes test failures, proposes precise code diffs, and re-executes tests up to 3 bounded iterations.',
+    banglaDef: 'নিজে নিজে ভুল ধরা ও শুধরে নেওয়ার স্বয়ংক্রিয় লুপ। কোডে বাগ থাকলে AI মডেলরা টেস্ট ফেইলিওর লগ বিশ্লেষণ করে স্বয়ংক্রিয়ভাবে ফিক্স প্রয়োগ করে।',
+    realWorldAnalogy: 'একজন লেখক বই লেখার পর এডিটর ভুল ধরিয়ে দেওয়া এবং লেখক সাথে সাথে তা সংশোধন করে নির্ভুল করার মতো।',
+    whyItMatters: 'মানুষের ম্যানুয়াল সময় ব্যয় না করেই কোডকে বাগ-মুক্ত ও টেস্ট-পাস অবস্থায় নিয়ে আসে।',
+  },
+  {
+    id: 'bloom-filter',
+    term: 'Bloom Filter & LRU Cache',
+    category: 'Architecture',
+    englishDef: 'Space-efficient probabilistic data structure for lightning-fast membership checking, backed by Least Recently Used memory eviction.',
+    banglaDef: 'অত্যন্ত অল্প মেমরি ব্যবহার করে লক্ষ লক্ষ বাতিল টোকেনের তালিকা থেকে এক মিলি-সেকেন্ডে খুঁজে বের করার বিশেষ মেমরি স্ট্রাকচার।',
+    realWorldAnalogy: 'ভিআইপি ক্লাবের দারোয়ানের কাছে থাকা সংক্ষিপ্ত ব্ল্যাকলিস্ট মেমোরির মতো—যেখানে এক পলক দেখেই বলে দেওয়া যায় কাউকে ঢুকতে দেওয়া হবে কি না।',
+    whyItMatters: 'সার্ভারের মেমরি শেষ হওয়া (RAM Exhaustion বা DoS attack) ঠেকায়।',
+  },
+  {
+    id: 'clock-skew',
+    term: 'Clock Skew Tolerance (nbf & exp)',
+    category: 'Security',
+    englishDef: 'Acceptable small time drift (e.g. 5 seconds) between distributed servers when evaluating token expiration or valid-from timestamps.',
+    banglaDef: 'বিভিন্ন সার্ভারের ঘড়ির সময়ে সামান্য কয়েক সেকেন্ডের পার্থক্য থাকলেও টোকেন ভ্যালিডেশনে যাতে অযথা এরর না ঘটে, তার জন্য ৫ সেকেন্ডের সহনশীলতা রাখা।',
+    realWorldAnalogy: 'পরীক্ষার হলের ঘড়ি আর তোমার হাতের ঘড়িতে ২-৩ সেকেন্ডের এদিক-ওদিক হলেও গার্ডের পরীক্ষার খাতা না কেড়ে নেওয়ার মতো।',
+    whyItMatters: 'সার্ভার সিঙ্ক্রোনাইজেশনের ছোটখাটো তারতম্যে ইউজারের সেশন ভেঙে পড়া বন্ধ করে।',
+  },
+  {
+    id: 'hmac-sha256',
+    term: 'HMAC-SHA256 Signature',
+    category: 'Security',
+    englishDef: 'Cryptographic hash calculated using a secret key and SHA-256 algorithm to guarantee both data authenticity and message integrity.',
+    banglaDef: 'সিক্রেট কি ও মেসেজ মিলিয়ে তৈরি করা ক্রিপ্টোগ্রাফিক ডিজিটাল সই। প্রেরক যে তথ্য পাঠিয়েছে, পথে কেউ এক অক্ষরও বদলালে সই মিলবে না।',
+    realWorldAnalogy: 'সরকারী দলিলের উপর দেওয়া মোম ও বিশেষ সিলমোহরের মতো—সিল অক্ষত থাকলে বোঝা যায় চিঠির ভিতরের কাগজ কেউ বদলায়নি।',
+    whyItMatters: 'টোকেনের ডাটা ট্যাম্পারিং বা জালিয়াতি ১০০% ধরা ফেলে।',
+  },
+  {
+    id: 'rate-limiting',
+    term: 'Rate Limiting (Token Bucket)',
+    category: 'Security',
+    englishDef: 'Traffic management algorithm restricting user requests (e.g. max 100 verifications/second) to protect servers against brute-force DoS.',
+    banglaDef: 'নির্দিষ্ট সময়ের মধ্যে একজন ইউজার বা আইপি কতবার রিকোয়েস্ট পাঠাতে পারবে তা নিয়ন্ত্রণ করা, যাতে সার্ভার ওভারলোড না হয়।',
+    realWorldAnalogy: 'ব্যাংকের এটিএম বুথে পর পর তিনবার ভুল পিন দিলে কার্ড লক করে দেওয়ার নিয়মের মতো।',
+    whyItMatters: 'অটোমেটেড বট অ্যাটাক ও ব্রুট-ফোর্স হ্যাকিং প্রতিরোধ করে।',
+  },
+  {
+    id: 'quota-guard',
+    term: 'Claude Quota Guard',
+    category: 'Architecture',
+    englishDef: 'Intelligent cost protection mechanism that keeps expensive models (Claude) optional or dormant until final consensus synthesis.',
+    banglaDef: 'ব্যয়বহুল AI মডেলের অহেতুক ব্যবহার বন্ধ রেখে ব্যবহারকারীর খরচ ও কোটা রক্ষা করার স্বয়ংক্রিয় গার্ড। কেবল চূড়ান্ত অডিটের সময়েই এটি যুক্ত হয়।',
+    realWorldAnalogy: 'ছোটখাটো কাজে সাধারণ গাড়ি ব্যবহার করা এবং শুধু ভিআইপি মিটিংয়ের জন্য দামি মার্সিডিজ বের করার মতো।',
+    whyItMatters: 'ডেভেলপারের API বিল ও ব্যবহার খরচ নূন্যতম রাখে।',
+  },
+  {
+    id: 'decision-packet',
+    term: 'Decision Packet (আর্কিটেকচার চুক্তি)',
+    category: 'Architecture',
+    englishDef: 'Structured Schema 1.0 JSON contract detailing agreed decisions, concrete tasks, acceptance criteria, and security risks.',
+    banglaDef: 'AI মডেলদের আলোচনার পর চূড়ান্ত হওয়া আর্কিটেকচারাল ব্লুপ্রিন্ট। এতে কী কী ফাইল তৈরি হবে, কী টেস্ট রান হবে এবং কী সিকিউরিটি মানা হবে তা লিপিবদ্ধ থাকে।',
+    realWorldAnalogy: 'বাড়ি তৈরির আগে রাজউক অনুমোদিত ইঞ্জিনিয়ারিং ব্লুপ্রিন্টের মতো—যেখানে সব দেয়াল, পাইপ ও নকশা চূড়ান্ত করা থাকে।',
+    whyItMatters: 'কোড লেখার আগেই পুরো প্রজেক্টের পরিকল্পনা স্বচ্ছ ও অপরিবর্তনীয় রাখে।',
+  },
+  {
+    id: 'least-privilege',
+    term: 'Principle of Least Privilege',
+    category: 'Security',
+    englishDef: 'Security design where every component operates using only the minimum set of permissions necessary to perform its specific job.',
+    banglaDef: 'যেকোনো সিস্টেমকে কেবল ততটুকুই পাওয়ার দেওয়া যতটুকু তার কাজের জন্য একান্ত জরুরি—অতিরিক্ত কোনো অ্যাক্সেস না দেওয়া।',
+    realWorldAnalogy: 'বাসার কাজের বুয়াকে প্রধান গেটের চাবি দেওয়া, কিন্তু আলমারির লকার বা সিন্দুকের চাবি না দেওয়ার মতো।',
+    whyItMatters: 'কোনো একটি অংশে বাগ বা সমস্যা হলেও পুরো পিসি সুরক্ষিত থাকে।',
+  },
+  {
+    id: 'evidence-collection',
+    term: 'Cryptographic Evidence Collector',
+    category: 'Quality & Testing',
+    englishDef: 'Audit trail generator that snapshots git status, captures test stdout/stderr, and fingerprints diffs with SHA-256 for proof.',
+    banglaDef: 'কোড রান ও টেস্ট চলাকালীন প্রতিটি মুহূর্তের আউটপুট, ফাইল পরিবর্তন ও রেজাল্টের ডিজিটাল অডিট রেকর্ড রাখা।',
+    realWorldAnalogy: 'ক্রাইম সিনের ফরেনসিক প্রমাণপত্র বা ব্ল্যাকবক্স রেকর্ডের মতো—যা কোনো বিতর্ক ছাড়াই প্রমাণ করে কী ঘটেছে।',
+    whyItMatters: 'বিচারক ও অডিটরদের সামনে কোডের গুণগত মানের অকাট্য প্রমাণ উপস্থাপন করে।',
+  },
+];
