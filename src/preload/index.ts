@@ -44,6 +44,8 @@ const api: IElectronAPI = {
     return ipcRenderer.invoke('provider:send-prompt', { providerId, prompt });
   },
 
+  toggleShowcaseMode: (enabled?: boolean) => ipcRenderer.invoke('showcase:toggle', enabled),
+  isShowcaseMode: () => ipcRenderer.invoke('showcase:is-active'),
   onProviderStatusChanged: (callback: (state: ProviderState) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, state: ProviderState) => {
       callback(state);

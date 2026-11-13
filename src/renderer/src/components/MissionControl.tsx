@@ -12,6 +12,7 @@ interface MissionControlProps {
   ) => void;
   onStop: () => void;
   onSelectWorkspace: () => void;
+  onToggleShowcase?: () => void;
 }
 
 export const MissionControl: React.FC<MissionControlProps> = ({
@@ -19,6 +20,7 @@ export const MissionControl: React.FC<MissionControlProps> = ({
   onStart,
   onStop,
   onSelectWorkspace,
+  onToggleShowcase,
 }) => {
   const [idea, setIdea] = useState(session.idea);
   const [workspace, setWorkspace] = useState(session.workspace);
@@ -81,8 +83,51 @@ export const MissionControl: React.FC<MissionControlProps> = ({
 
   const activeProviderList = (Object.keys(providers) as ProviderId[]).filter((id) => providers[id]);
 
+  const handleLoadShowcaseScenario = () => {
+    setIdea(
+      'Implement a Zero-Trust JWT Authentication & Token Revocation Engine with Constant-Time Signature Verification, Rate Limiting, and Automated Unit Tests'
+    );
+    setProviders({
+      chatgpt: true,
+      gemini: true,
+      deepseek: true,
+      claude: true,
+    });
+    setStartingProvider('chatgpt');
+    setMaxRetries(3);
+    if (!session.showcaseMode && onToggleShowcase) {
+      onToggleShowcase();
+    }
+  };
+
   return (
     <div className="mission-form">
+      <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button
+          type="button"
+          onClick={handleLoadShowcaseScenario}
+          disabled={session.running}
+          style={{
+            background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+            border: '1px solid #6366f1',
+            color: '#c7d2fe',
+            padding: '5px 10px',
+            borderRadius: '6px',
+            fontSize: '11px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            width: '100%',
+            justifyContent: 'center',
+          }}
+          title="Preload the high-impact Zero-Trust Security & QA benchmark scenario"
+        >
+          <span>⭐</span> Load SQAT Summit 2026 Live Demo Scenario
+        </button>
+      </div>
+
       <div className="form-group">
         <label className="form-label">Project Goal / Development Requirement</label>
         <textarea

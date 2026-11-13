@@ -1,13 +1,15 @@
 import React from 'react';
+import { Logo } from './Logo';
 import type { OrchestratorSessionState, ProviderId } from '../../../shared/types';
 
 interface TitlebarProps {
   session: OrchestratorSessionState;
   onOpenLogin?: (id: ProviderId) => void;
   onClearSession?: (id: ProviderId) => void;
+  onToggleShowcase?: () => void;
 }
 
-export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin, onClearSession }) => {
+export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin, onClearSession, onToggleShowcase }) => {
   const { providerStates, cliTool } = session;
 
   const getStatusTitle = (id: ProviderId, name: string) => {
@@ -25,7 +27,8 @@ export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin, onClea
   return (
     <header className="titlebar">
       <div className="titlebar-brand">
-        <span className="icon">⚡</span> Multi-AI Autonomous Development Controller (Desktop)
+        <Logo size={22} />
+        <span>Multi-AI Autonomous Development Controller</span>
       </div>
 
       <div className="model-status-strip">
@@ -63,6 +66,20 @@ export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin, onClea
         </div>
         <div className={`model-pill ${cliTool.available ? 'active' : ''}`} title={`Agent CLI: ${cliTool.name} (v${cliTool.version})`}>
           <span className="dot"></span> CLI: {cliTool.name} {cliTool.available ? `(${cliTool.version})` : '(Missing)'}
+        </div>
+        <div
+          className={`model-pill ${session.showcaseMode ? 'active' : ''}`}
+          style={{
+            cursor: 'pointer',
+            borderColor: session.showcaseMode ? '#eab308' : 'var(--border-subtle)',
+            background: session.showcaseMode ? 'rgba(234, 179, 8, 0.15)' : 'transparent',
+            color: session.showcaseMode ? '#facc15' : 'var(--text-secondary)',
+          }}
+          onClick={onToggleShowcase}
+          title="Click to toggle SQAT Summit High-Speed Showcase Mode"
+        >
+          <span className="dot" style={{ background: session.showcaseMode ? '#facc15' : 'var(--text-muted)' }}></span>
+          {session.showcaseMode ? '⚡ SQAT SHOWCASE: ACTIVE' : '⚡ Showcase Mode'}
         </div>
       </div>
     </header>

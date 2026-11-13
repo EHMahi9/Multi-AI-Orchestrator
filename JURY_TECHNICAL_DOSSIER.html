@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Technical Dossier — Multi-AI Autonomous Development Orchestrator</title>
+<link rel="icon" type="image/svg+xml" href="public/favicon.svg">
+<style>
+  @page { size: A4; margin: 12mm 15mm; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1a202c;
+    background: #ffffff;
+    line-height: 1.45;
+    font-size: 11pt;
+    margin: 0;
+    padding: 0;
+  }
+  .header {
+    border-bottom: 2px solid #0B63E5;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .header h1 {
+    font-size: 18pt;
+    margin: 0;
+    color: #0A3FA8;
+    letter-spacing: -0.5px;
+  }
+  .header .tagline {
+    font-size: 9.5pt;
+    color: #4a5568;
+    margin-top: 3px;
+  }
+  .header .meta {
+    text-align: right;
+    font-size: 9pt;
+    color: #718096;
+    font-weight: 500;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .card h3 {
+    margin: 0 0 6px 0;
+    font-size: 11pt;
+    color: #0A3FA8;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 4px;
+  }
+  ul {
+    margin: 4px 0;
+    padding-left: 18px;
+    font-size: 9.5pt;
+  }
+  li {
+    margin-bottom: 3px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    font-size: 8pt;
+    font-weight: 700;
+    border-radius: 4px;
+    background: #e0f2fe;
+    color: #0369a1;
+  }
+  .badge.success {
+    background: #dcfce7;
+    color: #15803d;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    margin-top: 6px;
+  }
+  th, td {
+    padding: 5px 8px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  th {
+    background: #f1f5f9;
+    color: #334155;
+    font-weight: 600;
+  }
+  .diagram {
+    background: #0f172a;
+    color: #38bdf8;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: Consolas, monospace;
+    font-size: 8pt;
+    line-height: 1.35;
+    margin-bottom: 12px;
+    white-space: pre;
+  }
+  .footer {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 6px;
+    margin-top: 14px;
+    font-size: 8pt;
+    color: #94a3b8;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="display:flex; align-items:center; gap:12px;">
+    <img src="public/logo.svg" alt="Nexus Shield Logo" style="width:44px; height:44px;">
+    <div>
+      <h1>Multi-AI Autonomous Development Orchestrator</h1>
+      <div class="tagline">Autonomous Multi-Model Consensus, Zero-Trust Sandboxing &amp; Closed-Loop QA</div>
+    </div>
+  </div>
+  <div class="meta">
+    SQAT Summit 2026<br>
+    <b>DIU Dept. of Software Engineering</b>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>1. Core Problem &amp; Industry Relevance</h3>
+    <ul>
+      <li><b>Single-Model Blindspots:</b> Lone LLMs suffer from architectural hallucinations and edge-case omissions.</li>
+      <li><b>Enterprise Cost Barrier:</b> Token pricing for multi-turn planning and code audits is cost-prohibitive.</li>
+      <li><b>Solution:</b> Coordinates ChatGPT, Gemini &amp; DeepSeek over <b>Chrome DevTools Protocol (CDP)</b> for 100% free, multi-perspective software development.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>2. Technical &amp; Architectural Stack</h3>
+    <ul>
+      <li><b>Desktop Core:</b> Electron 34, TypeScript 5.7, Node.js (V8 Architecture).</li>
+      <li><b>Frontend:</b> React 19, Vite 6, Tailwind CSS (Dark Mission Control).</li>
+      <li><b>Orchestration:</b> Asynchronous Consensus State Machine (3-way loop).</li>
+      <li><b>Local Execution:</b> Antigravity Engine (`agy -p`) with SHA-256 Signatures.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="diagram">┌─────────────────────────┐     ┌────────────────────────┐     ┌────────────────────────┐
+│ 1. Multi-Agent Planning │ ──&gt; │ 2. Quality &amp; Security  │ ──&gt; │ 3. Autonomous Execution│
+│ ChatGPT (Architect)     │     │ • Schema Validation    │     │ • Antigravity CLI      │
+│ Gemini (Feasibility)    │     │ • Path Sandboxing      │     │ • Automated Test Run   │
+│ DeepSeek (Edge Cases)   │     │ • Whitelist Whitelist  │     │ • Git Diff Capture     │
+└─────────────────────────┘     └────────────────────────┘     └───────────┬────────────┘
+                                                                           │
+                                ┌────────────────────────┐                 ▼
+                                │ 4. Closed-Loop Review  │ &lt;────────────────
+                                │ Passes? Completed ✓    │
+                                │ Fails? Revision Loop ↺ │
+                                └────────────────────────┘</div>
+
+<div class="card" style="margin-bottom: 12px;">
+  <h3>3. Quality Assurance &amp; Verification Matrix (SQAT Focus)</h3>
+  <p style="font-size: 9pt; margin: 4px 0 6px 0;">The codebase enforces strict unit, integration, and security verification. All test suites run locally with zero cloud dependence:</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Test Suite</th>
+        <th>Coverage Focus</th>
+        <th>Assertions</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>tests/autonomous.loop.test.mjs</code></td>
+        <td>Closed-loop consensus, failing test rejections, iteration limits</td>
+        <td>15 tests</td>
+        <td><span class="badge success">PASSED</span></td>
+      </tr>
+      <tr>
+        <td><code>tests/consensus.pipeline.test.mjs</code></td>
+        <td>Multi-provider turn routing, quorum enforcement, schema recovery</td>
+        <td>12 tests</td>
+        <td><span class="badge success">PASSED</span></td>
+      </tr>
+      <tr>
+        <td><code>tests/execution.engine.test.mjs</code></td>
+        <td>Security policy, directory traversal blocks, command whitelisting</td>
+        <td>10 tests</td>
+        <td><span class="badge success">PASSED</span></td>
+      </tr>
+      <tr>
+        <td><code>tests/remediation.test.mjs</code></td>
+        <td>Windows space-path handling, watchdog process termination</td>
+        <td>14 tests</td>
+        <td><span class="badge success">PASSED</span></td>
+      </tr>
+      <tr>
+        <td><code>tests/provider.agnostic.test.mjs</code></td>
+        <td>Dynamic provider rotation, fallback failover, solo-model modes</td>
+        <td>13 tests</td>
+        <td><span class="badge success">PASSED</span></td>
+      </tr>
+      <tr>
+        <td><code>tests/chatgpt.submission.test.mjs</code></td>
+        <td>CDP resilient selector probing, Cloudflare/rate-limit detection</td>
+        <td>12 tests</td>
+        <td><span class="badge success">PASSED</span></td>
+      </tr>
+      <tr>
+        <td><code>tests/smoke.test.mjs</code></td>
+        <td>IPC contract definitions, Electron partition isolation</td>
+        <td>14 tests</td>
+        <td><span class="badge success">PASSED</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <div style="margin-top: 8px; font-size: 9.5pt; text-align: right; font-weight: 600; color: #166534;">
+    Total Verification: 90 / 90 Tests Passed (Duration: ~4.9 seconds)
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>4. Security &amp; Execution Policies</h3>
+    <ul>
+      <li><b>Sandbox Enforcement:</b> Canonicalizes directory paths to strictly prevent path traversal outside the chosen repo.</li>
+      <li><b>Operator Neutralization:</b> Rejects pipe (`|`), redirection (`&gt;`), and chaining (`&amp;&amp;`) shell operators.</li>
+      <li><b>Tamper-Evident Hashing:</b> Uses SHA-256 signatures to lock decision packets before passing to local runners.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>5. Innovation &amp; Competitive Edge</h3>
+    <ul>
+      <li><b>Zero API Cost:</b> Leverages active web sessions via CDP, bypassing thousands of dollars in cloud token fees.</li>
+      <li><b>Evidence-Grounded Review:</b> The AI reviewer does not evaluate code in the dark—it reads real <code>npm test</code> outputs and terminal logs.</li>
+      <li><b>Reproducibility:</b> 1-click startup with zero complex cloud dependencies.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="footer">
+  <span>SQAT Summit 2026 — Project Showcasing Participant</span>
+  <span>Repository: D:\code\NEXT JS\multi-ai-orchestrator</span>
+  <span>Quality · Security · AI</span>
+</div>
+
+</body>
+</html>

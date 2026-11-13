@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
+import fs from 'fs';
 import { exec } from 'child_process';
 import { setupWindowSecurity, validateWorkspacePath } from './security';
 import { ProviderSessionManager } from './providers/manager';
@@ -53,6 +54,7 @@ let sessionState: OrchestratorSessionState = {
   correctionProposal: null,
   iterationHistory: [],
   finalReportPath: null,
+  showcaseMode: providerManager.isShowcaseMode(),
 };
 
 function broadcastState(): void {
@@ -91,6 +93,7 @@ function detectAgentCli(): Promise<{ name: string; version: string; available: b
 }
 
 function createWindow(): void {
+  const iconPath = path.join(__dirname, '../../public/icon.png');
   mainWindow = new BrowserWindow({
     width: 1360,
     height: 860,
@@ -98,6 +101,7 @@ function createWindow(): void {
     minHeight: 700,
     backgroundColor: '#0a0d12',
     title: 'Multi-AI Autonomous Development Controller',
+    icon: fs.existsSync(iconPath) ? iconPath : undefined,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -176,6 +180,20 @@ ipcMain.handle('cli:check-status', async () => {
   const result = await detectAgentCli();
   broadcastState();
   return result;
+});
+
+ipcMain.handle('showcase:toggle', async (_event, enabled?: boolean): Promise<boolean> => {
+  const next = typeof enabled === 'boolean' ? enabled : !providerManager.isShowcaseMode();
+  providerManager.setShowcaseMode(next);
+  sessionState.showcaseMode = next;
+  sessionState.providerStates = providerManager.getAllStates();
+  broadcastState();
+  broadcastLog(`\n[SQAT Showcase Mode] ${next ? 'ACTIVATED (High-speed presentation mode)' : 'DEACTIVATED (Live web session mode)'}\n`);
+  return next;
+});
+
+ipcMain.handle('showcase:is-active', (): boolean => {
+  return providerManager.isShowcaseMode();
 });
 
 ipcMain.handle('dialog:select-workspace', async (): Promise<string | null> => {

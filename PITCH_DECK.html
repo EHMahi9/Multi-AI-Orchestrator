@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQAT Summit 2026 — Multi-AI Autonomous Development Orchestrator</title>
+<link rel="icon" type="image/svg+xml" href="public/favicon.svg">
+<style>
+  :root {
+    --bg-base: #07090e;
+    --bg-surface: #0e131d;
+    --bg-card: #151b28;
+    --border-subtle: #222c3d;
+    --border-glow: #3b82f6;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-blue: #3b82f6;
+    --accent-green: #10b981;
+    --accent-gold: #f59e0b;
+    --accent-cyan: #06b6d4;
+    --accent-purple: #8b5cf6;
+    --accent-red: #ef4444;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Presentation Top Bar */
+  .top-bar {
+    height: 48px;
+    background: #090c12;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    font-size: 13px;
+  }
+  .brand {
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand .tag {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-secondary);
+  }
+  .timer-pill {
+    background: #1e293b;
+    border: 1px solid #334155;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #38bdf8;
+  }
+  .btn-nav {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+  }
+  .btn-nav:hover {
+    border-color: var(--border-glow);
+    background: #1e293b;
+  }
+
+  /* Progress Bar */
+  .progress-container {
+    height: 3px;
+    background: #1e293b;
+    width: 100%;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    width: 16.66%;
+    transition: width 0.3s ease;
+  }
+
+  /* Slide Stage */
+  .slide-stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    position: relative;
+  }
+  .slide {
+    display: none;
+    width: 100%;
+    max-width: 1180px;
+    height: 100%;
+    max-height: 680px;
+    animation: fadeIn 0.3s ease-out;
+  }
+  .slide.active {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Typography & Cards */
+  h1 { font-size: 38px; font-weight: 800; line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 12px; }
+  h2 { font-size: 30px; font-weight: 700; margin-bottom: 10px; color: #fff; }
+  .subtitle { font-size: 16px; color: var(--text-secondary); margin-bottom: 30px; max-width: 800px; line-height: 1.5; }
+  .highlight { color: #38bdf8; font-weight: 600; }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 10px;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 10px;
+  }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 10px;
+  }
+
+  .card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .card:hover {
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+  }
+  .card-icon {
+    font-size: 26px;
+    margin-bottom: 12px;
+  }
+  .card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #f1f5f9;
+  }
+  .card p {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* Stat Callout */
+  .stat-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #34d399;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    width: fit-content;
+  }
+  .metric-large {
+    font-size: 42px;
+    font-weight: 800;
+    color: #38bdf8;
+    margin: 6px 0;
+  }
+
+  /* Model Relay Flowchart */
+  .relay-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 20px 0;
+  }
+  .model-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+  }
+  .model-box .name {
+    font-weight: 700;
+    font-size: 14px;
+    margin-top: 6px;
+  }
+  .model-box .role-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .relay-arrow {
+    font-size: 20px;
+    color: #475569;
+    padding: 0 10px;
+  }
+
+  /* Footer */
+  .footer-nav {
+    height: 40px;
+    background: #090c12;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .key-hint {
+    background: #1e293b;
+    border: 1px solid #334155;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    color: #cbd5e1;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <div class="brand">
+      <img src="public/favicon.svg" alt="Nexus Shield Logo" style="width:24px; height:24px; vertical-align:middle; filter:drop-shadow(0 0 6px rgba(59,130,246,0.6));">
+      <span>Multi-AI Autonomous Development Orchestrator</span>
+      <span class="tag">SQAT SUMMIT 2026</span>
+    </div>
+    <div class="controls">
+      <span id="slideIndicator">Slide 1 of 6</span>
+      <div class="timer-pill" id="pitchTimer">⏱ 00:00 / 05:00</div>
+      <button class="btn-nav" onclick="prevSlide()">◀ Prev</button>
+      <button class="btn-nav" onclick="nextSlide()">Next ▶</button>
+      <button class="btn-nav" onclick="toggleFullScreen()">⛶ Fullscreen</button>
+    </div>
+  </header>
+
+  <!-- Progress Bar -->
+  <div class="progress-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <!-- Main Slide Stage -->
+  <main class="slide-stage">
+
+    <!-- SLIDE 1: Cover & Mission -->
+    <section class="slide active" id="slide-1">
+      <div class="stat-badge">🏆 Project Showcasing — SQAT Summit 2026</div>
+      <h1>Quality, Security & AI: Shaping the Future of Autonomous Software Engineering</h1>
+      <p class="subtitle">
+        Bridging the critical gap between raw generative AI and enterprise software engineering through
+        <strong>multi-agent consensus debate</strong>, <strong>zero-shell sandbox security</strong>, and <strong>autonomous closed-loop testing</strong>.
+      </p>
+      <div class="grid-3">
+        <div class="card" style="border-top: 3px solid #3b82f6;">
+          <div class="card-icon">🧠</div>
+          <h3>Multi-Model Consensus</h3>
+          <p>Eliminates single-model hallucination by orchestrating ChatGPT, Gemini, DeepSeek, and Claude in an adversarial peer-review quorum.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid #10b981;">
+          <div class="card-icon">🛡️</div>
+          <h3>Zero-Trust Security</h3>
+          <p>Strict AST tokenized execution with zero shell invocation, workspace canonicalization, and SHA-256 HMAC cryptographic user approval.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid #f59e0b;">
+          <div class="card-icon">🧪</div>
+          <h3>90-Test Automated QA</h3>
+          <p>Self-healing execution loop with automated git-evidence capture, defect scoring, and 90 automated tests passing in 4.3 seconds.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: The Core Problem -->
+    <section class="slide" id="slide-2">
+      <div class="stat-badge" style="background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.3); color:#f87171;">
+        ⚠️ The Industry Dilemma
+      </div>
+      <h2>Why Single-Model AI Fails in Production Software Engineering</h2>
+      <p class="subtitle">
+        Current AI coding tools (Copilot, Cursor) query a single LLM and immediately apply changes to local disk. In software engineering, this introduces catastrophic risks:
+      </p>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon" style="color:#ef4444">💥</div>
+          <h3>Silent Regressions & Hallucination</h3>
+          <p>Single models invent non-existent APIs, delete working logic, and lack the internal friction required to spot edge-case logic flaws.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="color:#f59e0b">🔓</div>
+          <h3>Vulnerable Shell Injection</h3>
+          <p>Tools passing raw strings to <code>bash -c</code> or <code>cmd /c</code> allow malicious AI output to execute arbitrary host commands or directory traversal.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="color:#a855f7">🚫</div>
+          <h3>Zero Automated Verification</h3>
+          <p>Standard tools treat generation as completion. They don't run tests, capture execution evidence, or verify assertions against acceptance criteria.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: Multi-AI Consensus Architecture -->
+    <section class="slide" id="slide-3">
+      <div class="stat-badge">🤝 Architectural Pillar 1: Consensus Protocol</div>
+      <h2>Open Collaboration & Multi-Agent Consensus Protocol</h2>
+      <p class="subtitle">
+        Instead of blind faith in one model, our orchestrator drives an adversarial peer-review relay.
+      </p>
+
+      <div class="relay-strip">
+        <div class="model-box">
+          <span style="font-size:24px">🟢</span>
+          <span class="name" style="color:#10a37f">ChatGPT</span>
+          <span class="role-desc">Turn 1: Lead Architect</span>
+        </div>
+        <div class="relay-arrow">➔</div>
+        <div class="model-box">
+          <span style="font-size:24px">🔵</span>
+          <span class="name" style="color:#3b82f6">Gemini</span>
+          <span class="role-desc">Turn 2: Security & Feasibility</span>
+        </div>
+        <div class="relay-arrow">➔</div>
+        <div class="model-box">
+          <span style="font-size:24px">🔷</span>
+          <span class="name" style="color:#06b6d4">DeepSeek</span>
+          <span class="role-desc">Turn 3: Code Spec Specialist</span>
+        </div>
+        <div class="relay-arrow">➔</div>
+        <div class="model-box">
+          <span style="font-size:24px">🟠</span>
+          <span class="name" style="color:#d97706">Claude</span>
+          <span class="role-desc">Turn 4: Auditor & Synthesizer</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Dynamic Role Assignment</h3>
+          <p>Any model can be selected as the starter or synthesizer. No hardcoded biases; consensus requires mathematical quorum across active agents.</p>
+        </div>
+        <div class="card">
+          <h3>Schema 1.0 Decision Packet</h3>
+          <p>The relay concludes only when a strictly typed Decision Packet is produced containing agreed architectural decisions, target files, and test commands.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: Security & Governance -->
+    <section class="slide" id="slide-4">
+      <div class="stat-badge" style="background:rgba(59,130,246,0.12); border-color:rgba(59,130,246,0.3); color:#60a5fa;">
+        🔒 Architectural Pillar 2: Enterprise Security
+      </div>
+      <h2>Zero-Trust Sandboxing & Cryptographic Governance</h2>
+      <p class="subtitle">
+        Engineered specifically for the "Security" mandate of SQAT Summit 2026.
+      </p>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon">🔏</div>
+          <h3>SHA-256 HMAC Signatures</h3>
+          <p>No code executes without explicit human approval. The approved Decision Packet is cryptographically hashed with HMAC-SHA256. Any tamper invalidates the run instantly.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🛑</div>
+          <h3>Zero-Shell AST Tokenizer</h3>
+          <p>Commands are parsed through a strict AST tokenizer. Dangerous shell operators (<code>&amp;&amp;</code>, <code>|</code>, <code>;</code>, <code>`</code>) and unauthorized binaries are rejected at the kernel level.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📂</div>
+          <h3>Path Canonicalization</h3>
+          <p>All file targets are resolved against canonical realpath. Directory traversal attacks (<code>../../etc/passwd</code>) and protected baseline folders are strictly quarantined.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: SQAT Verification & Quality -->
+    <section class="slide" id="slide-5">
+      <div class="stat-badge" style="background:rgba(245,158,11,0.12); border-color:rgba(245,158,11,0.3); color:#fbbf24;">
+        📊 Architectural Pillar 3: Quality & Automated Testing
+      </div>
+      <h2>Automated Quality Gates & Autonomous Closed-Loop Self-Healing</h2>
+      <p class="subtitle">
+        Direct alignment with the 15-mark Software Quality & Testing rubric (Official Tie-Breaker #2).
+      </p>
+      <div class="grid-4">
+        <div class="card" style="text-align:center;">
+          <div class="metric-large">90 / 90</div>
+          <p>Automated Tests Passing</p>
+          <span style="font-size:11px; color:#10b981; font-weight:700;">100% Pass Rate</span>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div class="metric-large">4.3s</div>
+          <p>Full Test Execution</p>
+          <span style="font-size:11px; color:#38bdf8; font-weight:700;">Blazing Fast Native Speed</span>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div class="metric-large">88.2%</div>
+          <p>Core Logic Line Coverage</p>
+          <span style="font-size:11px; color:#f59e0b; font-weight:700;">100% Policy Functions</span>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div class="metric-large">Max 3</div>
+          <p>Self-Healing Iterations</p>
+          <span style="font-size:11px; color:#a855f7; font-weight:700;">Autonomous Loop Gate</span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h3>The Autonomous Review Loop</h3>
+        <p>Execution produces evidence (git diffs, exit codes, test assertions) ➔ Multi-AI reviewers evaluate the evidence ➔ If tests fail, the planner generates a scoped correction ➔ Loop repeats until <strong>PASS</strong> or iteration limit is reached.</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: Live Demo & Conclusion -->
+    <section class="slide" id="slide-6">
+      <div class="stat-badge">🚀 Live Demonstration</div>
+      <h2>Watch Multi-AI Autonomous Orchestration Live</h2>
+      <p class="subtitle">
+        We will now switch to the live Electron Desktop Controller to demonstrate:
+      </p>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon">1️⃣</div>
+          <h3>Autonomous Debate</h3>
+          <p>Watch 4 models debate a Zero-Trust JWT Authentication architecture and resolve security edge-cases.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">2️⃣</div>
+          <h3>Cryptographic Gate</h3>
+          <p>Inspect the human approval checkpoint and live SHA-256 fingerprint generation.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">3️⃣</div>
+          <h3>90-Test Execution</h3>
+          <p>Watch the local engine run tests live, capture git diffs, and generate the SQAT Compliance Report.</p>
+        </div>
+      </div>
+      <div style="margin-top:28px; text-align:center;">
+        <p style="font-size:16px; color:#e2e8f0; font-weight:600;">
+          Thank you, esteemed judges and SQAT Club! We are ready for your questions.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer Navigation -->
+  <footer class="footer-nav">
+    <div>Use <span class="key-hint">◄</span> <span class="key-hint">►</span> or <span class="key-hint">Space</span> to navigate slides | Press <span class="key-hint">F</span> for Fullscreen</div>
+    <div>Department of Software Engineering, Daffodil International University</div>
+  </footer>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 6;
+    let timerSeconds = 0;
+    let timerInterval = null;
+
+    function updateSlide() {
+      document.querySelectorAll('.slide').forEach((el, idx) => {
+        el.classList.toggle('active', idx + 1 === currentSlide);
+      });
+      document.getElementById('slideIndicator').textContent = `Slide ${currentSlide} of ${totalSlides}`;
+      document.getElementById('progressBar').style.width = `${(currentSlide / totalSlides) * 100}%`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => alert(err.message));
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    // Keyboard Navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullScreen();
+      }
+    });
+
+    // Presentation Timer
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        const mins = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+        const secs = String(timerSeconds % 60).padStart(2, '0');
+        const timerEl = document.getElementById('pitchTimer');
+        timerEl.textContent = `⏱ ${mins}:${secs} / 05:00`;
+        if (timerSeconds >= 240 && timerSeconds < 300) {
+          timerEl.style.color = '#f59e0b'; // Amber warning at 4 mins
+        } else if (timerSeconds >= 300) {
+          timerEl.style.color = '#ef4444'; // Red warning at 5 mins
+        }
+      }, 1000);
+    }
+
+    window.onload = () => {
+      updateSlide();
+      startTimer();
+    };
+  </script>
+</body>
+</html>

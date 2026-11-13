@@ -238,6 +238,7 @@ export interface OrchestratorSessionState {
   correctionProposal: CorrectionProposal | null;
   iterationHistory: IterationRecord[];
   finalReportPath: string | null;
+  showcaseMode?: boolean;
 }
 
 export interface AppMetadata {
@@ -283,4 +284,6 @@ export interface IElectronAPI {
     prompt: string
   ) => Promise<{ ok: boolean; response?: string; error?: string }>;
   onProviderStatusChanged: (callback: (state: ProviderState) => void) => () => void;
+  toggleShowcaseMode?: (enabled?: boolean) => Promise<boolean>;
+  isShowcaseMode?: () => Promise<boolean>;
 }

@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="shieldBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e131f" />
+      <stop offset="50%" stop-color="#0a0d15" />
+      <stop offset="100%" stop-color="#05070a" />
+    </linearGradient>
+
+    <!-- Outer Hexagon Border Gradient -->
+    <linearGradient id="hexBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="35%" stop-color="#3b82f6" />
+      <stop offset="70%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+
+    <!-- Core Quantum Gradient -->
+    <linearGradient id="coreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+
+    <!-- Relay Circuit Lines Gradient -->
+    <linearGradient id="circuitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.8" />
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <filter id="intenseGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Outer Protective Shield (Hexagon) -->
+  <polygon
+    points="256,36 446,146 446,366 256,476 66,366 66,146"
+    fill="url(#shieldBg)"
+    stroke="url(#hexBorder)"
+    stroke-width="8"
+    stroke-linejoin="round"
+  />
+
+  <!-- Subtle Inner Shield Inset -->
+  <polygon
+    points="256,58 426,156 426,356 256,454 86,356 86,156"
+    fill="none"
+    stroke="#1e293b"
+    stroke-width="2"
+    stroke-dasharray="6,6"
+    opacity="0.6"
+  />
+
+  <!-- Interconnecting Circuit Relays (Cross-Model Consensus Mesh) -->
+  <g stroke="url(#circuitGrad)" stroke-width="3" opacity="0.85">
+    <!-- Outer Diamond Mesh -->
+    <line x1="256" y1="120" x2="392" y2="256" />
+    <line x1="392" y1="256" x2="256" y2="392" />
+    <line x1="256" y1="392" x2="120" y2="256" />
+    <line x1="120" y1="256" x2="256" y2="120" />
+
+    <!-- Cross-Center Axial Conduits -->
+    <line x1="256" y1="120" x2="256" y2="392" stroke="#3b82f6" stroke-width="2.5" />
+    <line x1="120" y1="256" x2="392" y2="256" stroke="#10b981" stroke-width="2.5" />
+  </g>
+
+  <!-- Central Quantum Nexus Core (Consensus Engine) -->
+  <g filter="url(#intenseGlow)">
+    <!-- Central Outer Ring -->
+    <circle cx="256" cy="256" r="44" fill="#090d16" stroke="url(#coreGrad)" stroke-width="4" />
+    <!-- Rotating Inner Diamond -->
+    <polygon points="256,222 290,256 256,290 222,256" fill="url(#coreGrad)" opacity="0.9" />
+    <!-- Central Energy Core -->
+    <circle cx="256" cy="256" r="9" fill="#ffffff" />
+  </g>
+
+  <!-- Model Node 1 (Top): DeepSeek (Code Spec Specialist - Cyan) -->
+  <g filter="url(#neonGlow)">
+    <circle cx="256" cy="120" r="22" fill="#082f49" stroke="#06b6d4" stroke-width="4" />
+    <circle cx="256" cy="120" r="9" fill="#06b6d4" />
+    <circle cx="256" cy="120" r="4" fill="#ffffff" />
+  </g>
+
+  <!-- Model Node 2 (Right): ChatGPT (Lead Architect - Emerald) -->
+  <g filter="url(#neonGlow)">
+    <circle cx="392" cy="256" r="22" fill="#064e3b" stroke="#10a37f" stroke-width="4" />
+    <circle cx="392" cy="256" r="9" fill="#10a37f" />
+    <circle cx="392" cy="256" r="4" fill="#ffffff" />
+  </g>
+
+  <!-- Model Node 3 (Bottom): Gemini (Security & Feasibility - Electric Blue) -->
+  <g filter="url(#neonGlow)">
+    <circle cx="256" cy="392" r="22" fill="#172554" stroke="#3b82f6" stroke-width="4" />
+    <circle cx="256" cy="392" r="9" fill="#3b82f6" />
+    <circle cx="256" cy="392" r="4" fill="#ffffff" />
+  </g>
+
+  <!-- Model Node 4 (Left): Claude (Auditor & Quota Guard - Amber/Gold) -->
+  <g filter="url(#neonGlow)">
+    <circle cx="120" cy="256" r="22" fill="#451a03" stroke="#f59e0b" stroke-width="4" />
+    <circle cx="120" cy="256" r="9" fill="#f59e0b" />
+    <circle cx="120" cy="256" r="4" fill="#ffffff" />
+  </g>
+</svg>

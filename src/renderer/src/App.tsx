@@ -181,9 +181,21 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleToggleShowcase = async () => {
+    if (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.toggleShowcaseMode) {
+      const active = await window.electronAPI.toggleShowcaseMode();
+      setSession((prev) => ({ ...prev, showcaseMode: active }));
+    }
+  };
+
   return (
     <>
-      <Titlebar session={session} onOpenLogin={handleOpenLogin} onClearSession={handleClearSession} />
+      <Titlebar
+        session={session}
+        onOpenLogin={handleOpenLogin}
+        onClearSession={handleClearSession}
+        onToggleShowcase={handleToggleShowcase}
+      />
       <main className="workspace">
         <aside className="mission-column">
           <div className="section-header">
@@ -195,6 +207,7 @@ export const App: React.FC = () => {
             onStart={handleStart}
             onStop={handleStop}
             onSelectWorkspace={handleSelectWorkspace}
+            onToggleShowcase={handleToggleShowcase}
           />
           <div className="section-header" style={{ borderTop: '1px solid var(--border-subtle)' }}>
             <h2>Autonomous Consensus</h2>

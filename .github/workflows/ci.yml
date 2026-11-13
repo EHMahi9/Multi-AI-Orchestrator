@@ -1,0 +1,41 @@
+name: SQAT Continuous Quality & Security Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  quality-gate:
+    name: SQAT Automated Verification Matrix
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [20.x, 22.x]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Strict Typecheck (Zero Compiler Errors)
+        run: npm run typecheck
+
+      - name: Build Verification (Renderer & Main Process)
+        run: npm run build
+
+      - name: Execute 90-Test Automated Quality & Security Suite
+        run: node --test tests/*.test.mjs
+
+      - name: Verify Code Coverage & Security Policies
+        run: node --experimental-test-coverage --test tests/*.test.mjs
