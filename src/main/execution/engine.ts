@@ -49,6 +49,11 @@ export class ExecutionService {
         } catch {
           this.activeChild.kill('SIGTERM');
         }
+        setTimeout(() => {
+          if (this.activeChild && !this.activeChild.killed) {
+            try { this.activeChild.kill('SIGKILL'); } catch {}
+          }
+        }, 200);
       }
     }
   }

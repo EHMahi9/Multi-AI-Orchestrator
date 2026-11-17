@@ -62,9 +62,14 @@ test('Remediation 1: Windows CLI path containing spaces executes properly', asyn
   const logs = [];
 
   // Create mock CLI in a directory path containing SPACES
+  const isWin = process.platform === 'win32';
   const spaceDir = fs.mkdtempSync(path.join(os.tmpdir(), 'space test dir '));
-  const mockCli = path.join(spaceDir, 'mock agent.cmd');
-  fs.writeFileSync(mockCli, `@echo off\r\necho Mock CLI with spaces executed successfully: %*\r\nexit /b 0\r\n`);
+  const mockCli = path.join(spaceDir, isWin ? 'mock agent.cmd' : 'mock agent.sh');
+  if (isWin) {
+    fs.writeFileSync(mockCli, `@echo off\r\necho Mock CLI with spaces executed successfully: %*\r\nexit /b 0\r\n`);
+  } else {
+    fs.writeFileSync(mockCli, `#!/bin/sh\necho "Mock CLI with spaces executed successfully: $@"\nexit 0\n`, { mode: 0o755 });
+  }
 
   const mockResolver = {
     resolve: async () => ({
@@ -126,9 +131,13 @@ test('Remediation 2: Watchdog terminates hanging CLI process and reports EXECUTI
   const logs = [];
 
   // Mock CLI that simulates a long-running hang
-  const hangScript = path.join(os.tmpdir(), `hang-cli-${Date.now()}.cmd`);
-  // On Windows, pinging 127.0.0.1 for 10 seconds hangs predictably
-  fs.writeFileSync(hangScript, `@echo off\r\nping 127.0.0.1 -n 10 > nul\r\nexit /b 0\r\n`);
+  const isWin = process.platform === 'win32';
+  const hangScript = path.join(os.tmpdir(), `hang-cli-${Date.now()}${isWin ? '.cmd' : '.sh'}`);
+  if (isWin) {
+    fs.writeFileSync(hangScript, `@echo off\r\nping 127.0.0.1 -n 10 > nul\r\nexit /b 0\r\n`);
+  } else {
+    fs.writeFileSync(hangScript, `#!/bin/sh\nexec sleep 10\n`, { mode: 0o755 });
+  }
 
   const mockResolver = {
     resolve: async () => ({

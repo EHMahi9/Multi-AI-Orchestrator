@@ -13,6 +13,17 @@ import { validateStructuredReview, parseAndValidateReview } from '../dist-electr
 import { computeDecisionPacketHash } from '../dist-electron/shared/schema.js';
 import { validateAndCanonicalizeWorkspace } from '../dist-electron/main/execution/policy.js';
 
+function createMockCli(dir, content = 'echo ok') {
+  const isWin = process.platform === 'win32';
+  const scriptPath = path.join(dir, isWin ? 'mock.cmd' : 'mock.sh');
+  if (isWin) {
+    fs.writeFileSync(scriptPath, `@echo off\r\n${content}\r\nexit /b 0\r\n`);
+  } else {
+    fs.writeFileSync(scriptPath, `#!/bin/sh\n${content}\nexit 0\n`, { mode: 0o755 });
+  }
+  return scriptPath;
+}
+
 function createApprovedPacket(workspace, overrides = {}) {
   const packet = {
     version: '1.0',
@@ -238,8 +249,7 @@ test('Loop State Machine 9: Duplicate concurrent runs are rejected', async () =>
     const packet = createApprovedPacket(ws);
 
     // Mock CLI script
-    const mockCli = path.join(ws, 'mock.cmd');
-    fs.writeFileSync(mockCli, `@echo off\r\necho running\r\nexit /b 0\r\n`);
+    const mockCli = createMockCli(ws, 'echo running');
     const mockResolver = {
       resolve: async () => ({ name: 'mock', executablePath: mockCli, version: '1.0', available: true }),
     };
@@ -279,8 +289,7 @@ test('Loop State Machine 10: Enforces 3 correction iterations and stops with REV
   try {
     const packet = createApprovedPacket(ws);
 
-    const mockCli = path.join(ws, 'mock.cmd');
-    fs.writeFileSync(mockCli, `@echo off\r\necho mock\r\nexit /b 0\r\n`);
+    const mockCli = createMockCli(ws, 'echo mock');
     const mockResolver = {
       resolve: async () => ({ name: 'mock', executablePath: mockCli, version: '1.0', available: true }),
     };
@@ -346,8 +355,7 @@ test('Loop State Machine 11: Cancellation cleanly halts loop and writes report',
   try {
     const packet = createApprovedPacket(ws);
 
-    const mockCli = path.join(ws, 'mock.cmd');
-    fs.writeFileSync(mockCli, `@echo off\r\necho mock\r\nexit /b 0\r\n`);
+    const mockCli = createMockCli(ws, 'echo mock');
     const mockResolver = {
       resolve: async () => ({ name: 'mock', executablePath: mockCli, version: '1.0', available: true }),
     };
@@ -390,8 +398,7 @@ test('Loop State Machine 12: Successful consensus in loop terminates with PASS a
       "import test from 'node:test'; import assert from 'node:assert/strict'; test('Pass', () => assert.ok(true));\n"
     );
 
-    const mockCli = path.join(ws, 'mock.cmd');
-    fs.writeFileSync(mockCli, `@echo off\r\necho All tests passed\r\nexit /b 0\r\n`);
+    const mockCli = createMockCli(ws, 'echo "All tests passed"');
     const mockResolver = {
       resolve: async () => ({ name: 'mock', executablePath: mockCli, version: '1.0', available: true }),
     };
@@ -461,8 +468,7 @@ test('Loop State Machine 14: Pre-existing user files are preserved and tracked i
       ],
     });
 
-    const mockCli = path.join(ws, 'mock.cmd');
-    fs.writeFileSync(mockCli, `@echo off\r\necho Modified > modified.txt\r\nexit /b 0\r\n`);
+    const mockCli = createMockCli(ws, 'echo "Modified" > modified.txt');
     const mockResolver = {
       resolve: async () => ({ name: 'mock', executablePath: mockCli, version: '1.0', available: true }),
     };

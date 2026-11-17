@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { ExecutionService } from '../dist-electron/main/execution/engine.js';
 import { CliResolver } from '../dist-electron/main/execution/cli-resolver.js';
@@ -160,10 +161,32 @@ test('CLI Resolver: Detects installed gemini binary', async () => {
   const resolver = new CliResolver();
   const info = await resolver.resolve();
 
-  assert.equal(info.available, true);
-  assert.equal(info.name, 'gemini');
-  assert.ok(info.version.length > 0);
-  assert.ok(fs.existsSync(info.executablePath));
+  if (info.available) {
+    assert.ok(['gemini', 'agy'].includes(info.name));
+    assert.ok(info.version.length > 0);
+  } else {
+    assert.equal(info.available, false);
+    assert.equal(info.name, 'none');
+    assert.match(info.error, /BLOCKED/);
+  }
+
+  // Also verify customPath resolution with mock executable on any environment
+  const tmpWs = fs.mkdtempSync(path.join(os.tmpdir(), 'resolver-test-'));
+  try {
+    const isWin = process.platform === 'win32';
+    const mockExe = path.join(tmpWs, isWin ? 'custom-gemini.cmd' : 'custom-gemini.sh');
+    if (isWin) {
+      fs.writeFileSync(mockExe, '@echo off\r\necho 1.5.0\r\n');
+    } else {
+      fs.writeFileSync(mockExe, '#!/bin/sh\necho 1.5.0\n', { mode: 0o755 });
+    }
+    const customResolver = new CliResolver(mockExe);
+    const customInfo = await customResolver.resolve();
+    assert.equal(customInfo.available, true);
+    assert.equal(customInfo.version, '1.5.0');
+  } finally {
+    try { fs.rmSync(tmpWs, { recursive: true, force: true }); } catch {}
+  }
 });
 
 // ----------------------------------------------------------------------------

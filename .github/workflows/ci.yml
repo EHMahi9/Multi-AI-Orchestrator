@@ -10,6 +10,7 @@ jobs:
   quality-gate:
     name: SQAT Automated Verification Matrix
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
         node-version: [20.x, 22.x]
@@ -18,6 +19,11 @@ jobs:
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v4
+
+      - name: Configure Git for Testing
+        run: |
+          git config --global user.email "ci@sqat.dev"
+          git config --global user.name "SQAT CI Runner"
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
