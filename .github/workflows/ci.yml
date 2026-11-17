@@ -41,7 +41,7 @@ jobs:
         run: npm run build
 
       - name: Execute 90-Test Automated Quality & Security Suite
-        run: node --test tests/*.test.mjs
+        run: npm test
 
       - name: Verify Code Coverage & Security Policies
-        run: node --experimental-test-coverage --test tests/*.test.mjs
+        run: npm run test:coverage

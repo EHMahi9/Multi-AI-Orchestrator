@@ -43,17 +43,17 @@ export function evaluateTestOutput(
     return { testPassed: false, testOutputSummary: `Process exited with failure code ${exitCode}.` };
   }
 
-  // Look for TAP / node:test style indicators
-  const failMatch = combined.match(/ℹ fail (\d+)/i) || combined.match(/(\d+) failing/i);
-  const passMatch = combined.match(/ℹ pass (\d+)/i) || combined.match(/(\d+) passing/i);
+  // Look for TAP / node:test style indicators across Node versions (Node 20/22 use #, Node 24 uses ℹ)
+  const failMatch = combined.match(/(?:ℹ|#)\s*fail\s+(\d+)/i) || combined.match(/(\d+)\s+failing/i);
+  const passMatch = combined.match(/(?:ℹ|#)\s*pass\s+(\d+)/i) || combined.match(/(\d+)\s+passing/i);
   const passCount = passMatch ? parseInt(passMatch[1], 10) : 0;
   const failCount = failMatch ? parseInt(failMatch[1], 10) : 0;
 
-  if (failCount > 0) {
+  if (failMatch && failCount > 0) {
     return { testPassed: false, testOutputSummary: `Test runner reported ${failCount} failing tests.` };
   }
 
-  if (passCount > 0 && failCount === 0) {
+  if (passMatch && failCount === 0) {
     return { testPassed: true, testOutputSummary: `Test runner reported ${passCount} passing tests (0 failures).` };
   }
 
@@ -62,7 +62,7 @@ export function evaluateTestOutput(
     return { testPassed: true, testOutputSummary: 'Test suite passed cleanly.' };
   }
 
-  if (/AssertionError/i.test(combined) || /FAIL\s+/i.test(combined)) {
+  if (/AssertionError/i.test(combined) || /FAIL\s+[^0\s]/i.test(combined)) {
     return { testPassed: false, testOutputSummary: 'Test output contains assertion errors or failures.' };
   }
 
