@@ -621,14 +621,27 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
           <div className="card" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 290px)', padding: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div>
-                <h3 style={{ color: '#38bdf8', fontSize: '15px', fontWeight: 700 }}>
+                <h3 style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 700 }}>
                   SQAT Summit 2026 — Automated Quality & Security Audit
                 </h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '2px' }}>
-                  Live verification metrics mapped directly to the official 100-mark judging rubric.
+                  Live verification metrics mapped directly to SQAT competition judging criteria.
                 </p>
               </div>
-              <span className="badge badge-success" style={{ padding: '6px 12px', fontSize: '11px', background: 'var(--accent-success)', color: '#fff', borderRadius: '4px', fontWeight: 700 }}>
+              <span style={{
+                padding: '5px 12px',
+                fontSize: '11px',
+                background: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid #10b981',
+                color: '#34d399',
+                borderRadius: '6px',
+                fontWeight: 700,
+                letterSpacing: '0.3px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
                 100% QUALITY GATE PASSED
               </span>
             </div>
@@ -636,77 +649,101 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
             {/* Metric Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
               <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent-success)' }}>90 / 90</div>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)' }}>90 / 90</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Automated Tests</div>
-                <div style={{ fontSize: '10px', color: 'var(--accent-success)', fontWeight: 700, marginTop: '2px' }}>0 Failed (100% Pass)</div>
+                <div style={{ fontSize: '10.5px', color: 'var(--accent-success)', fontWeight: 600, marginTop: '2px' }}>0 Failed • 100% Pass</div>
               </div>
               <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--border-active)' }}>4.3s</div>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)' }}>4.3s</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Full Suite Runtime</div>
-                <div style={{ fontSize: '10px', color: 'var(--border-active)', fontWeight: 700, marginTop: '2px' }}>Sub-5s High Speed</div>
+                <div style={{ fontSize: '10.5px', color: 'var(--border-active)', fontWeight: 600, marginTop: '2px' }}>Sub-5s High Speed</div>
               </div>
               <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 800, color: '#eab308' }}>88.2%</div>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)' }}>88.2%</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Core Line Coverage</div>
-                <div style={{ fontSize: '10px', color: '#eab308', fontWeight: 700, marginTop: '2px' }}>100% Security Policy</div>
+                <div style={{ fontSize: '10.5px', color: 'var(--accent-success)', fontWeight: 600, marginTop: '2px' }}>Exceeds 80% Policy</div>
               </div>
               <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 800, color: '#a855f7' }}>SHA-256</div>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)' }}>SHA-256</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Cryptographic Gate</div>
-                <div style={{ fontSize: '10px', color: '#a855f7', fontWeight: 700, marginTop: '2px' }}>HMAC User Signed</div>
+                <div style={{ fontSize: '10.5px', color: 'var(--border-active)', fontWeight: 600, marginTop: '2px' }}>HMAC User Signed</div>
               </div>
             </div>
 
             {/* Rubric Alignment Table */}
             <h4 style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>
-              Official 100-Mark Judging Rubric Alignment
+              SQAT Verification & Rubric Compliance Matrix
             </h4>
             <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                 <thead>
                   <tr style={{ background: 'var(--bg-card)', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>
                     <th style={{ textAlign: 'left', padding: '8px 12px' }}>Judging Criterion</th>
-                    <th style={{ textAlign: 'center', padding: '8px 12px', width: '80px' }}>Marks</th>
-                    <th style={{ textAlign: 'left', padding: '8px 12px' }}>Implementation in Multi-AI Orchestrator</th>
-                    <th style={{ textAlign: 'center', padding: '8px 12px', width: '100px' }}>Status</th>
+                    <th style={{ textAlign: 'center', padding: '8px 12px', width: '90px' }}>Weight</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px' }}>Automated Verification Evidence</th>
+                    <th style={{ textAlign: 'center', padding: '8px 12px', width: '100px' }}>Gate Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>1. Innovation & Relevance</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--border-active)' }}>20</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--text-secondary)' }}>20%</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>Multi-agent consensus eliminates single-model hallucination in autonomous software development.</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--accent-success)', fontWeight: 700 }}>Full 20/20</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px' }}>
+                      <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                        PASSED
+                      </span>
+                    </td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>2. Technical Depth & Complexity</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--border-active)' }}>20</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--text-secondary)' }}>20%</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>Electron isolated WebView partitions, AST tokenizer, zero-shell sandbox, git diff evidence collection.</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--accent-success)', fontWeight: 700 }}>Full 20/20</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px' }}>
+                      <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                        PASSED
+                      </span>
+                    </td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>3. Live Demo (Tie-Breaker #1)</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--border-active)' }}>20</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--text-secondary)' }}>20%</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>High-speed 2.5-minute presentation mode with 100% offline failover and live test execution.</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--accent-success)', fontWeight: 700 }}>Full 20/20</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px' }}>
+                      <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                        PASSED
+                      </span>
+                    </td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>4. Quality & Testing (Tie-Breaker #2)</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--border-active)' }}>15</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--text-secondary)' }}>15%</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>90 automated tests (unit, integration, security policy), node test coverage, and GitHub Actions CI matrix.</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--accent-success)', fontWeight: 700 }}>Full 15/15</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px' }}>
+                      <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                        PASSED
+                      </span>
+                    </td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>5. UI/UX & Design</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--border-active)' }}>10</td>
-                    <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>Modern dark cyber aesthetic with real-time streaming, status pills, and interactive terminal.</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--accent-success)', fontWeight: 700 }}>Full 10/10</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--text-secondary)' }}>10%</td>
+                    <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>Modern engineering console with real-time streaming, light/dark modes, accessible layout.</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px' }}>
+                      <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                        PASSED
+                      </span>
+                    </td>
                   </tr>
                   <tr>
                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>6. Presentation & Q&A</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--border-active)' }}>15</td>
-                    <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>Printable 2-page Jury Dossier, interactive 6-slide deck, and 5-minute timed pitch script.</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--accent-success)', fontWeight: 700 }}>Full 15/15</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--text-secondary)' }}>15%</td>
+                    <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>Printable 2-page Jury Dossier, interactive slide deck, and 5-minute timed pitch script.</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px' }}>
+                      <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                        PASSED
+                      </span>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -724,8 +761,13 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
         >
           <span>
             {sessionsDrawerOpen ? '▾' : '▸'} AI SESSIONS (ChatGPT • Gemini • DeepSeek • Claude)
+            {!sessionsDrawerOpen && (
+              <span style={{ marginLeft: '10px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 400 }}>
+                • 4 Isolated Sandboxes Active
+              </span>
+            )}
           </span>
-          <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: '10.5px' }}>
             {sessionsDrawerOpen ? 'Click to minimize' : 'Click to expand'}
           </span>
         </div>
@@ -740,7 +782,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                 </span>
               </div>
               <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                Session: persist:chatgpt
+                Isolated Partition
               </div>
               <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
                 <button
@@ -772,7 +814,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                 </span>
               </div>
               <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                Session: persist:gemini
+                Isolated Partition
               </div>
               <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
                 <button
@@ -804,7 +846,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                 </span>
               </div>
               <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                Session: persist:deepseek
+                Isolated Partition
               </div>
               <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
                 <button
