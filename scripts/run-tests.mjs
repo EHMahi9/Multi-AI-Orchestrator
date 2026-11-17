@@ -14,8 +14,13 @@ const testFiles = fs
   .sort()
   .map((f) => path.join('tests', f));
 
+const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
 const isCoverage = process.argv.includes('--coverage');
-const args = isCoverage
+// Node.js 20 has a known upstream bug in experimental coverage with source maps (nodejs/node#49868).
+// Full coverage table generation is enforced on Node 22+ (Active LTS).
+const useCoverage = isCoverage && nodeMajor >= 22;
+
+const args = useCoverage
   ? ['--experimental-test-coverage', '--test', ...testFiles]
   : ['--test', ...testFiles];
 
