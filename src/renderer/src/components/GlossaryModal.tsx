@@ -16,10 +16,10 @@ export const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, i
 
   const categoryLabels: Record<string, string> = {
     All: 'সবগুলো (All)',
-    Security: '🛡️ নিরাপত্তা (Security)',
-    Architecture: '🏛️ আর্কিটেকচার',
-    'Quality & Testing': '🧪 কোয়ালিটি ও টেস্ট',
-    'AI & Consensus': '🤖 AI সম্মতি',
+    Security: 'নিরাপত্তা (Security)',
+    Architecture: 'আর্কিটেকচার',
+    'Quality & Testing': 'কোয়ালিটি ও টেস্ট',
+    'AI & Consensus': 'AI সম্মতি',
   };
 
   const filteredTerms = useMemo(() => {
@@ -39,7 +39,7 @@ export const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, i
   }, [searchQuery, selectedCategory]);
 
   const handleCopy = (item: GlossaryTerm) => {
-    const text = `💡 [বাস্তব উদাহরণ] ${item.term}:\n${item.realWorldAnalogy}\n\n📖 সহজ ব্যাখ্যা: ${item.banglaDef}`;
+    const text = `[বাস্তব উদাহরণ] ${item.term}:\n${item.realWorldAnalogy}\n\nসহজ ব্যাখ্যা: ${item.banglaDef}`;
     navigator.clipboard.writeText(text);
     setCopiedId(item.id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -91,16 +91,13 @@ export const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, i
             background: 'linear-gradient(90deg, #161b22 0%, #0d1117 100%)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '24px' }}>📖</span>
-            <div>
-              <h3 style={{ margin: 0, color: '#f0f6fc', fontSize: '18px', fontWeight: 700 }}>
-                SWE ও AI সহজ শব্দকোষ (Beginner Explainer Dictionary)
-              </h3>
-              <p style={{ margin: '2px 0 0', color: '#8b949e', fontSize: '12px' }}>
-                জটিল কোডিং ও সাইবার-সিকিউরিটির টার্মগুলোর সহজ বাংলা ব্যাখ্যা ও বাস্তব জীবনের উদাহরণ
-              </p>
-            </div>
+          <div>
+            <h3 style={{ margin: 0, color: '#f0f6fc', fontSize: '18px', fontWeight: 700 }}>
+              SWE ও AI সহজ শব্দকোষ (Beginner Explainer Dictionary)
+            </h3>
+            <p style={{ margin: '2px 0 0', color: '#8b949e', fontSize: '12px' }}>
+              জটিল কোডিং ও সাইবার-সিকিউরিটির টার্মগুলোর সহজ বাংলা ব্যাখ্যা ও বাস্তব জীবনের উদাহরণ
+            </p>
           </div>
           <button
             type="button"
@@ -125,7 +122,7 @@ export const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, i
           <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
             <input
               type="text"
-              placeholder="🔍 টার্ম খুঁজুন... (e.g. timing, jwt, তালা, টোকেন, consensus)..."
+              placeholder="টার্ম খুঁজুন... (e.g. timing, jwt, তালা, টোকেন, consensus)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -270,13 +267,13 @@ export const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, i
                       cursor: 'pointer',
                     }}
                   >
-                    {copiedId === item.id ? '✔ কপি হয়েছে!' : '📋 কপি উদাহরণ'}
+                    {copiedId === item.id ? 'কপি হয়েছে' : 'কপি উদাহরণ'}
                   </button>
                 </div>
 
                 {/* Bangla Definition */}
                 <div style={{ color: '#e6edf3', fontSize: '13px', lineHeight: '1.5' }}>
-                  <strong style={{ color: '#7ee787' }}>📖 সহজ বাংলায় ব্যাখ্যা: </strong>
+                  <strong style={{ color: '#7ee787' }}>সহজ বাংলায় ব্যাখ্যা: </strong>
                   {item.banglaDef}
                 </div>
 
@@ -292,19 +289,19 @@ export const GlossaryModal: React.FC<GlossaryModalProps> = ({ isOpen, onClose, i
                     lineHeight: '1.5',
                   }}
                 >
-                  <strong>💡 বাস্তব জীবনের উদাহরণ: </strong>
+                  <strong>বাস্তব জীবনের উদাহরণ: </strong>
                   {item.realWorldAnalogy}
                 </div>
 
                 {/* Why It Matters */}
                 <div style={{ color: '#8b949e', fontSize: '12px', lineHeight: '1.4' }}>
-                  <strong style={{ color: '#cbd5e1' }}>🛡️ কেন এটি দরকার: </strong>
+                  <strong style={{ color: '#cbd5e1' }}>কেন এটি দরকার: </strong>
                   {item.whyItMatters}
                 </div>
 
                 {/* English Definition */}
                 <div style={{ color: '#6e7681', fontSize: '11px', borderTop: '1px solid #21262d', paddingTop: '6px' }}>
-                  <strong>🇬🇧 Tech Spec: </strong>
+                  <strong>Tech Spec: </strong>
                   {item.englishDef}
                 </div>
               </div>

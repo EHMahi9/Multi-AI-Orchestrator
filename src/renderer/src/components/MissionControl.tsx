@@ -129,10 +129,10 @@ export const MissionControl: React.FC<MissionControlProps> = ({
           onClick={handleLoadShowcaseScenario}
           disabled={session.running}
           style={{
-            background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
-            border: '1px solid #6366f1',
-            color: '#c7d2fe',
-            padding: '5px 10px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-primary)',
+            padding: '6px 10px',
             borderRadius: '6px',
             fontSize: '11px',
             fontWeight: 600,
@@ -142,10 +142,11 @@ export const MissionControl: React.FC<MissionControlProps> = ({
             gap: '6px',
             width: '100%',
             justifyContent: 'center',
+            transition: 'all 0.15s ease',
           }}
           title="Preload the high-impact Zero-Trust Security & QA benchmark scenario (English)"
         >
-          <span>⭐</span> Load SQAT Live Demo (English)
+          Load SQAT Demo (English)
         </button>
 
         <button
@@ -153,10 +154,10 @@ export const MissionControl: React.FC<MissionControlProps> = ({
           onClick={handleLoadBanglaShowcaseScenario}
           disabled={session.running}
           style={{
-            background: 'linear-gradient(135deg, #064e3b, #047857)',
-            border: '1px solid #10b981',
-            color: '#a7f3d0',
-            padding: '5px 10px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-primary)',
+            padding: '6px 10px',
             borderRadius: '6px',
             fontSize: '11px',
             fontWeight: 600,
@@ -166,10 +167,11 @@ export const MissionControl: React.FC<MissionControlProps> = ({
             gap: '6px',
             width: '100%',
             justifyContent: 'center',
+            transition: 'all 0.15s ease',
           }}
           title="মঞ্চে বিচারকদের সামনে দেখানোর জন্য ১-ক্লিকে বাংলা ডেমো লোড করুন"
         >
-          <span>🇧🇩</span> লোড করুন বাংলা ডেমো সিনারিও (Live Stage)
+          Load Demo (Bangla)
         </button>
       </div>
 
@@ -178,21 +180,22 @@ export const MissionControl: React.FC<MissionControlProps> = ({
           <label className="form-label" style={{ margin: 0 }}>
             {languageMode === 'bn' ? 'প্রজেক্টের লক্ষ্য বা রিকোয়ারমেন্ট' : 'Project Goal / Requirement'}
           </label>
-          <div style={{ display: 'flex', gap: '4px' }}>
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-base)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
             <button
               type="button"
               onClick={() => setLanguageMode('en')}
               style={{
                 padding: '2px 8px',
                 fontSize: '10px',
-                borderRadius: '10px',
-                border: languageMode === 'en' ? '1px solid #38bdf8' : '1px solid #30363d',
-                background: languageMode === 'en' ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
-                color: languageMode === 'en' ? '#38bdf8' : '#8b949e',
+                borderRadius: '4px',
+                border: 'none',
+                background: languageMode === 'en' ? 'var(--border-active)' : 'transparent',
+                color: languageMode === 'en' ? '#fff' : 'var(--text-muted)',
                 cursor: 'pointer',
+                fontWeight: 600,
               }}
             >
-              🌐 English
+              EN
             </button>
             <button
               type="button"
@@ -200,14 +203,15 @@ export const MissionControl: React.FC<MissionControlProps> = ({
               style={{
                 padding: '2px 8px',
                 fontSize: '10px',
-                borderRadius: '10px',
-                border: languageMode === 'bn' ? '1px solid #4ade80' : '1px solid #30363d',
-                background: languageMode === 'bn' ? 'rgba(74, 222, 128, 0.2)' : 'transparent',
-                color: languageMode === 'bn' ? '#4ade80' : '#8b949e',
+                borderRadius: '4px',
+                border: 'none',
+                background: languageMode === 'bn' ? 'var(--border-active)' : 'transparent',
+                color: languageMode === 'bn' ? '#fff' : 'var(--text-muted)',
                 cursor: 'pointer',
+                fontWeight: 600,
               }}
             >
-              🇧🇩 বাংলা
+              বাং
             </button>
             <button
               type="button"
@@ -215,14 +219,15 @@ export const MissionControl: React.FC<MissionControlProps> = ({
               style={{
                 padding: '2px 8px',
                 fontSize: '10px',
-                borderRadius: '10px',
-                border: languageMode === 'bilingual' ? '1px solid #facc15' : '1px solid #30363d',
-                background: languageMode === 'bilingual' ? 'rgba(250, 204, 21, 0.2)' : 'transparent',
-                color: languageMode === 'bilingual' ? '#facc15' : '#8b949e',
+                borderRadius: '4px',
+                border: 'none',
+                background: languageMode === 'bilingual' ? 'var(--border-active)' : 'transparent',
+                color: languageMode === 'bilingual' ? '#fff' : 'var(--text-muted)',
                 cursor: 'pointer',
+                fontWeight: 600,
               }}
             >
-              🔄 দ্বিভাষিক
+              Dual
             </button>
           </div>
         </div>
@@ -255,7 +260,7 @@ export const MissionControl: React.FC<MissionControlProps> = ({
             disabled={session.running}
             title="Browse Directory"
           >
-            📁 Browse
+            Browse
           </button>
         </div>
       </div>
@@ -322,7 +327,7 @@ export const MissionControl: React.FC<MissionControlProps> = ({
               disabled={session.running}
             />
             Claude
-            <span className="quota-indicator">⚡ Quota Guard</span>
+            <span className="quota-indicator">Quota Guard</span>
           </label>
         </div>
       </div>
@@ -336,7 +341,7 @@ export const MissionControl: React.FC<MissionControlProps> = ({
             disabled={session.running}
             style={{
               background: 'var(--bg-base)',
-              color: '#fff',
+              color: 'var(--text-primary)',
               border: '1px solid var(--border-subtle)',
               borderRadius: '6px',
               padding: '6px 10px',
@@ -366,14 +371,14 @@ export const MissionControl: React.FC<MissionControlProps> = ({
           onClick={handleStart}
           disabled={session.running}
         >
-          🚀 Start Autonomous Pipeline
+          Start Pipeline
         </button>
         <button
           className="btn btn-danger"
           onClick={onStop}
           disabled={!session.running}
         >
-          ⏹ Stop
+          Stop
         </button>
       </div>
     </div>

@@ -26,13 +26,13 @@ export const DiscussionStream: React.FC<DiscussionStreamProps> = ({ session }) =
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'success':
-        return <span style={{ color: '#4ade80', fontSize: '10px', fontWeight: 700 }}>✔ COMPLETE</span>;
+        return <span style={{ color: 'var(--accent-success)', fontSize: '10px', fontWeight: 700 }}>COMPLETE</span>;
       case 'pending':
-        return <span style={{ color: '#60a5fa', fontSize: '10px', fontWeight: 700 }}>⏳ IN PROGRESS</span>;
+        return <span style={{ color: 'var(--border-active)', fontSize: '10px', fontWeight: 700 }}>IN PROGRESS</span>;
       case 'error':
-        return <span style={{ color: '#ef4444', fontSize: '10px', fontWeight: 700 }}>❌ FAILED</span>;
+        return <span style={{ color: 'var(--accent-error)', fontSize: '10px', fontWeight: 700 }}>FAILED</span>;
       case 'skipped':
-        return <span style={{ color: '#94a3b8', fontSize: '10px', fontWeight: 700 }}>⏭ SKIPPED</span>;
+        return <span style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: 700 }}>SKIPPED</span>;
       default:
         return null;
     }

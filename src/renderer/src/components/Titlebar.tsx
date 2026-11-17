@@ -4,13 +4,23 @@ import type { OrchestratorSessionState, ProviderId } from '../../../shared/types
 
 interface TitlebarProps {
   session: OrchestratorSessionState;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
   onOpenLogin?: (id: ProviderId) => void;
   onClearSession?: (id: ProviderId) => void;
   onToggleShowcase?: () => void;
   onOpenGlossary?: () => void;
 }
 
-export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin, onClearSession, onToggleShowcase, onOpenGlossary }) => {
+export const Titlebar: React.FC<TitlebarProps> = ({
+  session,
+  theme = 'dark',
+  onToggleTheme,
+  onOpenLogin,
+  onClearSession,
+  onToggleShowcase,
+  onOpenGlossary,
+}) => {
   const { providerStates, cliTool } = session;
 
   const getStatusTitle = (id: ProviderId, name: string) => {
@@ -72,30 +82,44 @@ export const Titlebar: React.FC<TitlebarProps> = ({ session, onOpenLogin, onClea
           className={`model-pill ${session.showcaseMode ? 'active' : ''}`}
           style={{
             cursor: 'pointer',
-            borderColor: session.showcaseMode ? '#eab308' : 'var(--border-subtle)',
-            background: session.showcaseMode ? 'rgba(234, 179, 8, 0.15)' : 'transparent',
-            color: session.showcaseMode ? '#facc15' : 'var(--text-secondary)',
+            borderColor: session.showcaseMode ? 'var(--border-active)' : 'var(--border-subtle)',
+            background: session.showcaseMode ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+            color: session.showcaseMode ? 'var(--border-active)' : 'var(--text-secondary)',
           }}
           onClick={onToggleShowcase}
           title="Click to toggle SQAT Summit High-Speed Showcase Mode"
         >
-          <span className="dot" style={{ background: session.showcaseMode ? '#facc15' : 'var(--text-muted)' }}></span>
-          {session.showcaseMode ? '⚡ SQAT SHOWCASE: ACTIVE' : '⚡ Showcase Mode'}
+          <span className="dot" style={{ background: session.showcaseMode ? 'var(--border-active)' : 'var(--text-muted)' }}></span>
+          {session.showcaseMode ? 'SHOWCASE: ACTIVE' : 'Showcase'}
         </div>
         <div
-          className="model-pill active"
+          className="model-pill"
           style={{
             cursor: 'pointer',
-            borderColor: '#38bdf8',
-            background: 'rgba(56, 189, 248, 0.12)',
-            color: '#38bdf8',
-            fontWeight: 600,
+            borderColor: 'var(--border-subtle)',
+            color: 'var(--text-secondary)',
+            fontWeight: 500,
           }}
           onClick={onOpenGlossary}
           title="Click to open Beginner SWE & AI Concept Glossary (সহজ শব্দকোষ)"
         >
-          📖 সহজ শব্দকোষ
+          Glossary
         </div>
+        {onToggleTheme && (
+          <div
+            className="model-pill"
+            style={{
+              cursor: 'pointer',
+              borderColor: 'var(--border-subtle)',
+              color: 'var(--text-primary)',
+              fontWeight: 600,
+            }}
+            onClick={onToggleTheme}
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          >
+            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          </div>
+        )}
       </div>
     </header>
   );

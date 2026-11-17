@@ -33,6 +33,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
   const [activeTab, setActiveTab] = useState<TabKey>('terminal');
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
   const [showBeginnerExplainer, setShowBeginnerExplainer] = useState<boolean>(true);
+  const [sessionsDrawerOpen, setSessionsDrawerOpen] = useState<boolean>(false);
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,36 +49,34 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
           className={`nav-tab ${activeTab === 'decision' ? 'active' : ''}`}
           onClick={() => setActiveTab('decision')}
         >
-          📋 Decision Packet
+          Decision Packet
         </div>
         <div
           className={`nav-tab ${activeTab === 'evidence' ? 'active' : ''}`}
           onClick={() => setActiveTab('evidence')}
         >
-          🧪 Verification Evidence
+          Verification Evidence
         </div>
         <div
           className={`nav-tab ${activeTab === 'review' ? 'active' : ''}`}
           onClick={() => setActiveTab('review')}
         >
-          🔍 AI Review Loop
+          AI Review Loop
         </div>
         <div
           className={`nav-tab ${activeTab === 'terminal' ? 'active' : ''}`}
           onClick={() => setActiveTab('terminal')}
         >
-          💻 Real-Time Terminal
+          Real-Time Terminal
         </div>
         <div
           className={`nav-tab ${activeTab === 'sqat' ? 'active' : ''}`}
           onClick={() => setActiveTab('sqat')}
           style={{
-            borderColor: activeTab === 'sqat' ? '#eab308' : undefined,
-            color: activeTab === 'sqat' ? '#facc15' : undefined,
             fontWeight: 700,
           }}
         >
-          🛡️ SQAT Quality Gate (90 Tests)
+          SQAT Quality Gate (90 Tests)
         </div>
       </nav>
 
@@ -87,13 +86,13 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
             {session.decisionPacket ? (
               <>
                 {session.stage === 'awaiting_confirmation' && (
-                  <div style={{ background: '#1c1917', border: '1px solid #eab308', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-active)', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <h4 style={{ color: '#facc15', fontSize: '13px', fontWeight: 700 }}>
-                          ⚠️ User Approval Checkpoint Required (Milestone 3 Exit Gate)
+                        <h4 style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 700 }}>
+                          User Approval Checkpoint Required (Milestone 3 Exit Gate)
                         </h4>
-                        <p style={{ color: '#cbd5e1', fontSize: '12px', marginTop: '4px' }}>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px' }}>
                           Cross-model consensus complete. Review the agreed tasks below before approving.
                         </p>
                       </div>
@@ -101,10 +100,10 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                         <button
                           type="button"
                           className="btn btn-primary"
-                          style={{ background: '#16a34a', borderColor: '#22c55e', color: '#fff', fontSize: '11px', padding: '6px 12px' }}
+                          style={{ fontSize: '11px', padding: '6px 12px' }}
                           onClick={onApprovePacket}
                         >
-                          ✔ Approve Decision Packet
+                          Approve Decision Packet
                         </button>
                         <button
                           type="button"
@@ -112,7 +111,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                           style={{ fontSize: '11px', padding: '6px 12px' }}
                           onClick={onRejectPacket}
                         >
-                          ✖ Reject / Revise
+                          Reject / Revise
                         </button>
                       </div>
                     </div>
@@ -120,23 +119,23 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                 )}
 
                 {session.decisionPacket.approvedByUser && (
-                  <div style={{ background: '#052e16', border: '1px solid #16a34a', borderRadius: '8px', padding: '12px 14px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid var(--accent-success)', borderRadius: '8px', padding: '12px 14px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <div style={{ color: '#4ade80', fontSize: '12.5px', fontWeight: 700 }}>
-                        ✔ Decision Packet Approved by User
+                      <div style={{ color: 'var(--accent-success)', fontSize: '12.5px', fontWeight: 700 }}>
+                        Decision Packet Approved by User
                       </div>
-                      <div style={{ color: '#86efac', fontSize: '11px', marginTop: '2px' }}>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
                         Ready for agent execution via <code>{session.cliTool.name}</code> in <code>{session.workspace}</code>
                       </div>
                     </div>
                     <button
                       type="button"
                       className="btn btn-primary"
-                      style={{ background: '#16a34a', borderColor: '#22c55e', color: '#fff', fontSize: '11.5px', padding: '6px 14px' }}
+                      style={{ fontSize: '11.5px', padding: '6px 14px' }}
                       onClick={onRunApproved}
                       disabled={session.running}
                     >
-                      ⚡ Run Approved Tasks
+                      Run Approved Tasks
                     </button>
                   </div>
                 )}
@@ -164,8 +163,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showBeginnerExplainer ? '10px' : '0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '16px' }}>🎓</span>
-                      <h4 style={{ margin: 0, color: '#34d399', fontSize: '12.5px', fontWeight: 700 }}>
+                      <h4 style={{ margin: 0, color: 'var(--border-active)', fontSize: '12.5px', fontWeight: 700 }}>
                         সহজ বাংলায় আর্কিটেকচার ব্যাখ্যা (Beginner & Non-Coder Mode)
                       </h4>
                     </div>
@@ -173,65 +171,65 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                       type="button"
                       onClick={() => setShowBeginnerExplainer(!showBeginnerExplainer)}
                       style={{
-                        background: 'rgba(16, 185, 129, 0.15)',
-                        border: '1px solid #10b981',
-                        color: '#a7f3d0',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-subtle)',
+                        color: 'var(--text-secondary)',
                         padding: '2px 8px',
                         borderRadius: '4px',
                         fontSize: '10.5px',
                         cursor: 'pointer',
                       }}
                     >
-                      {showBeginnerExplainer ? '▼ সংক্ষেপ করুন' : '▶ বিস্তারিত দেখুন'}
+                      {showBeginnerExplainer ? 'সংক্ষেপ করুন' : 'বিস্তারিত দেখুন'}
                     </button>
                   </div>
 
                   {showBeginnerExplainer && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#e2e8f0', lineHeight: '1.5' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: 'var(--text-primary)', lineHeight: '1.5' }}>
                       <div>
-                        <strong style={{ color: '#facc15' }}>🎯 এই প্রজেক্টটি কী তৈরি করছে?</strong>
-                        <p style={{ margin: '2px 0 0', color: '#cbd5e1' }}>
+                        <strong style={{ color: 'var(--border-active)' }}>এই প্রজেক্টটি কী তৈরি করছে?</strong>
+                        <p style={{ margin: '2px 0 0', color: 'var(--text-secondary)' }}>
                           ইউজারের পাসওয়ার্ড ও লগইন সুরক্ষার জন্য একটি ডিজিটাল পাসপোর্ট বা টোকেন সিস্টেম তৈরি করা হচ্ছে, যা ব্যবহারকারী লগআউট করলে সাথে সাথে বাতিল হয়ে যায়।
                         </p>
                       </div>
 
                       <div>
-                        <strong style={{ color: '#f87171' }}>🛡️ কী ধরনের ঝুঁকি বা সাইবার আক্রমণ ঠেকানো হচ্ছে?</strong>
-                        <p style={{ margin: '2px 0 0', color: '#cbd5e1' }}>
+                        <strong style={{ color: 'var(--accent-error)' }}>কী ধরনের ঝুঁকি বা সাইবার আক্রমণ ঠেকানো হচ্ছে?</strong>
+                        <p style={{ margin: '2px 0 0', color: 'var(--text-secondary)' }}>
                           <strong>১. টাইমিং অ্যাটাক:</strong> চোর যেন তালা খোলার সময় মেপে পাসওয়ার্ডের অক্ষর অনুমান করতে না পারে (কনস্ট্যান্ট-টাইম চেক)।<br />
                           <strong>২. টোকেন চুরি:</strong> কেউ চুরি করা টোকেন ব্যবহার করতে গেলে ব্ল্যাকলিস্ট ক্যাশ দিয়ে সাথে সাথে আটকে দেওয়া।
                         </p>
                       </div>
 
                       <div>
-                        <strong style={{ color: '#60a5fa' }}>💡 বাস্তব জীবনের সহজ তুলনা (Analogy):</strong>
-                        <p style={{ margin: '2px 0 0', color: '#cbd5e1' }}>
+                        <strong style={{ color: 'var(--border-active)' }}>বাস্তব জীবনের সহজ তুলনা (Analogy):</strong>
+                        <p style={{ margin: '2px 0 0', color: 'var(--text-secondary)' }}>
                           সিনেমা হলের কিউআর কোড টিকিটের মতো। টিকিট স্ক্যানার প্রতিবার টিকিট চেক করে দেখবে আসল কিনা এবং শো শেষ হলে বা টিকিট ফেরত দিলে সাথে সাথে লিস্টে 'বাতিল' মার্ক করবে।
                         </p>
                       </div>
 
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>জটিল টার্ম শিখুন:</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>জটিল টার্ম শিখুন:</span>
                         <button
                           type="button"
                           onClick={() => onOpenGlossaryTerm?.('timing-attack')}
-                          style={{ background: '#1e293b', border: '1px solid #475569', color: '#38bdf8', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', color: 'var(--border-active)', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }}
                         >
-                          🔍 Timing Attack কী?
+                          Timing Attack কী?
                         </button>
                         <button
                           type="button"
                           onClick={() => onOpenGlossaryTerm?.('jwt')}
-                          style={{ background: '#1e293b', border: '1px solid #475569', color: '#38bdf8', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', color: 'var(--border-active)', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }}
                         >
-                          🔍 JWT কী?
+                          JWT কী?
                         </button>
                         <button
                           type="button"
                           onClick={() => onOpenGlossaryTerm?.('quorum-consensus')}
-                          style={{ background: '#1e293b', border: '1px solid #475569', color: '#38bdf8', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', color: 'var(--border-active)', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }}
                         >
-                          🔍 Quorum Consensus কী?
+                          Quorum Consensus কী?
                         </button>
                       </div>
                     </div>
@@ -308,8 +306,8 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
             {session.evidence ? (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h4 style={{ color: session.evidence.success ? '#4ade80' : '#ef4444', fontSize: '14px', fontWeight: 700 }}>
-                    {session.evidence.success ? '✔ Execution Succeeded' : '✖ Execution Failed / Blocked'}
+                  <h4 style={{ color: session.evidence.success ? 'var(--accent-success)' : 'var(--accent-error)', fontSize: '14px', fontWeight: 700 }}>
+                    {session.evidence.success ? 'Execution Succeeded' : 'Execution Failed / Blocked'}
                   </h4>
                   <div style={{ display: 'flex', gap: '8px', fontSize: '11px' }}>
                     <span style={{ background: '#1e293b', padding: '2px 8px', borderRadius: '4px', color: '#cbd5e1' }}>
@@ -403,17 +401,17 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
               <div style={{ background: '#1c1917', border: '1px solid #f59e0b', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <h4 style={{ color: '#fbbf24', fontSize: '13px', fontWeight: 700 }}>
-                      ⚠️ User Approval Required: Correction Iteration {session.correctionProposal.iteration}
+                    <h4 style={{ color: 'var(--border-active)', fontSize: '13px', fontWeight: 700 }}>
+                      User Approval Required: Correction Iteration {session.correctionProposal.iteration}
                     </h4>
-                    <p style={{ color: '#cbd5e1', fontSize: '12px', marginTop: '4px', lineHeight: 1.5 }}>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px', lineHeight: 1.5 }}>
                       {session.correctionProposal.explanation}
                     </p>
-                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
                       Target Scope: <code>{session.correctionProposal.proposedPacket.tasks.flatMap((t) => t.files).join(', ') || 'N/A'}</code>
                     </div>
                     {session.correctionProposal.expectedVerification && (
-                      <div style={{ fontSize: '11px', color: '#86efac', marginTop: '4px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--accent-success)', marginTop: '4px' }}>
                         Verification Check: <code>{session.correctionProposal.expectedVerification}</code>
                       </div>
                     )}
@@ -422,11 +420,11 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                     <button
                       type="button"
                       className="btn btn-primary"
-                      style={{ background: '#16a34a', borderColor: '#22c55e', color: '#fff', fontSize: '11px', padding: '6px 12px' }}
+                      style={{ fontSize: '11px', padding: '6px 12px' }}
                       onClick={onApproveCorrection}
                       disabled={session.running}
                     >
-                      ✔ Approve & Execute Fix
+                      Approve & Execute Fix
                     </button>
                     <button
                       type="button"
@@ -435,7 +433,7 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                       onClick={onRejectCorrection}
                       disabled={session.running}
                     >
-                      ✖ Decline / Stop Loop
+                      Decline / Stop Loop
                     </button>
                   </div>
                 </div>
@@ -541,8 +539,8 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <div style={{ color: '#4ade80', fontSize: '12px', fontStyle: 'italic', marginBottom: '16px' }}>
-                    ✔ No defects or findings identified. All checks verified clean.
+                  <div style={{ color: 'var(--accent-success)', fontSize: '12px', fontStyle: 'italic', marginBottom: '16px' }}>
+                    No defects or findings identified. All checks verified clean.
                   </div>
                 )}
               </div>
@@ -630,29 +628,29 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                   Live verification metrics mapped directly to the official 100-mark judging rubric.
                 </p>
               </div>
-              <span className="badge badge-success" style={{ padding: '6px 12px', fontSize: '11px', background: '#16a34a', color: '#fff', borderRadius: '4px', fontWeight: 700 }}>
-                ✔ 100% QUALITY GATE PASSED
+              <span className="badge badge-success" style={{ padding: '6px 12px', fontSize: '11px', background: 'var(--accent-success)', color: '#fff', borderRadius: '4px', fontWeight: 700 }}>
+                100% QUALITY GATE PASSED
               </span>
             </div>
 
             {/* Metric Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
-              <div style={{ background: '#0e131d', border: '1px solid #1e293b', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 800, color: '#22c55e' }}>90 / 90</div>
+              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent-success)' }}>90 / 90</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Automated Tests</div>
-                <div style={{ fontSize: '10px', color: '#22c55e', fontWeight: 700, marginTop: '2px' }}>0 Failed (100% Pass)</div>
+                <div style={{ fontSize: '10px', color: 'var(--accent-success)', fontWeight: 700, marginTop: '2px' }}>0 Failed (100% Pass)</div>
               </div>
-              <div style={{ background: '#0e131d', border: '1px solid #1e293b', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 800, color: '#38bdf8' }}>4.3s</div>
+              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--border-active)' }}>4.3s</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Full Suite Runtime</div>
-                <div style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 700, marginTop: '2px' }}>Sub-5s High Speed</div>
+                <div style={{ fontSize: '10px', color: 'var(--border-active)', fontWeight: 700, marginTop: '2px' }}>Sub-5s High Speed</div>
               </div>
-              <div style={{ background: '#0e131d', border: '1px solid #1e293b', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
                 <div style={{ fontSize: '24px', fontWeight: 800, color: '#eab308' }}>88.2%</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Core Line Coverage</div>
                 <div style={{ fontSize: '10px', color: '#eab308', fontWeight: 700, marginTop: '2px' }}>100% Security Policy</div>
               </div>
-              <div style={{ background: '#0e131d', border: '1px solid #1e293b', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
                 <div style={{ fontSize: '24px', fontWeight: 800, color: '#a855f7' }}>SHA-256</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Cryptographic Gate</div>
                 <div style={{ fontSize: '10px', color: '#a855f7', fontWeight: 700, marginTop: '2px' }}>HMAC User Signed</div>
@@ -660,13 +658,13 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
             </div>
 
             {/* Rubric Alignment Table */}
-            <h4 style={{ color: '#fff', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>
+            <h4 style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>
               Official 100-Mark Judging Rubric Alignment
             </h4>
-            <div style={{ background: '#0e131d', border: '1px solid #1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                 <thead>
-                  <tr style={{ background: '#151b28', color: 'var(--text-secondary)', borderBottom: '1px solid #222c3d' }}>
+                  <tr style={{ background: 'var(--bg-card)', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>
                     <th style={{ textAlign: 'left', padding: '8px 12px' }}>Judging Criterion</th>
                     <th style={{ textAlign: 'center', padding: '8px 12px', width: '80px' }}>Marks</th>
                     <th style={{ textAlign: 'left', padding: '8px 12px' }}>Implementation in Multi-AI Orchestrator</th>
@@ -674,41 +672,41 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid #1e293b' }}>
+                  <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>1. Innovation & Relevance</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: '#38bdf8' }}>20</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--border-active)' }}>20</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>Multi-agent consensus eliminates single-model hallucination in autonomous software development.</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: '#22c55e', fontWeight: 700 }}>✔ Full 20/20</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--accent-success)', fontWeight: 700 }}>Full 20/20</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #1e293b' }}>
+                  <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>2. Technical Depth & Complexity</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: '#38bdf8' }}>20</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--border-active)' }}>20</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>Electron isolated WebView partitions, AST tokenizer, zero-shell sandbox, git diff evidence collection.</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: '#22c55e', fontWeight: 700 }}>✔ Full 20/20</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--accent-success)', fontWeight: 700 }}>Full 20/20</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #1e293b' }}>
+                  <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>3. Live Demo (Tie-Breaker #1)</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: '#38bdf8' }}>20</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--border-active)' }}>20</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>High-speed 2.5-minute presentation mode with 100% offline failover and live test execution.</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: '#22c55e', fontWeight: 700 }}>✔ Full 20/20</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--accent-success)', fontWeight: 700 }}>Full 20/20</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #1e293b' }}>
+                  <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>4. Quality & Testing (Tie-Breaker #2)</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: '#38bdf8' }}>15</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--border-active)' }}>15</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>90 automated tests (unit, integration, security policy), node test coverage, and GitHub Actions CI matrix.</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: '#22c55e', fontWeight: 700 }}>✔ Full 15/15</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--accent-success)', fontWeight: 700 }}>Full 15/15</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #1e293b' }}>
+                  <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>5. UI/UX & Design</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: '#38bdf8' }}>10</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--border-active)' }}>10</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>Modern dark cyber aesthetic with real-time streaming, status pills, and interactive terminal.</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: '#22c55e', fontWeight: 700 }}>✔ Full 10/10</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--accent-success)', fontWeight: 700 }}>Full 10/10</td>
                   </tr>
                   <tr>
                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>6. Presentation & Q&A</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: '#38bdf8' }}>15</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--border-active)' }}>15</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>Printable 2-page Jury Dossier, interactive 6-slide deck, and 5-minute timed pitch script.</td>
-                    <td style={{ textAlign: 'center', padding: '8px 12px', color: '#22c55e', fontWeight: 700 }}>✔ Full 15/15</td>
+                    <td style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--accent-success)', fontWeight: 700 }}>Full 15/15</td>
                   </tr>
                 </tbody>
               </table>
@@ -718,140 +716,150 @@ export const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
       </div>
 
       {/* Embedded Session Status Drawer */}
-      <footer className="webview-drawer">
-        <div className="drawer-bar">
-          <span>EMBEDDED AI SESSIONS (PERSISTENT ISOLATED PARTITIONS)</span>
-          <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>Zero-Paid-API Webview Container</span>
+      <footer className={`webview-drawer ${sessionsDrawerOpen ? 'expanded' : 'collapsed'}`}>
+        <div
+          className="drawer-bar"
+          onClick={() => setSessionsDrawerOpen(!sessionsDrawerOpen)}
+          title="Click to expand or collapse AI Webview sessions"
+        >
+          <span>
+            {sessionsDrawerOpen ? '▾' : '▸'} AI SESSIONS (ChatGPT • Gemini • DeepSeek • Claude)
+          </span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>
+            {sessionsDrawerOpen ? 'Click to minimize' : 'Click to expand'}
+          </span>
         </div>
-        <div className="webview-previews">
-          {/* Provider 1: ChatGPT */}
-          <div className="webview-slot">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <strong style={{ color: 'var(--accent-chatgpt)' }}>ChatGPT</strong>
-              <span className={`badge-session status-${session.providerStates.chatgpt.status}`}>
-                {session.providerStates.chatgpt.status.replace(/_/g, ' ')}
-              </span>
+        {sessionsDrawerOpen && (
+          <div className="webview-previews">
+            {/* Provider 1: ChatGPT */}
+            <div className="webview-slot">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <strong style={{ color: 'var(--accent-chatgpt)' }}>ChatGPT</strong>
+                <span className={`badge-session status-${session.providerStates.chatgpt.status}`}>
+                  {session.providerStates.chatgpt.status.replace(/_/g, ' ')}
+                </span>
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                Session: persist:chatgpt
+              </div>
+              <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '10px', padding: '3px 6px', flex: 1 }}
+                  onClick={() => onOpenLogin?.('chatgpt')}
+                >
+                  Open Session
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '10px', padding: '3px 6px' }}
+                  onClick={() => onCheckStatus?.('chatgpt')}
+                  title="Check session status"
+                >
+                  ↻
+                </button>
+              </div>
             </div>
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-              Partition: persist:ai-provider-chatgpt
-            </div>
-            <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ fontSize: '10px', padding: '3px 6px', flex: 1 }}
-                onClick={() => onOpenLogin?.('chatgpt')}
-              >
-                🖥 Show / Login
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ fontSize: '10px', padding: '3px 6px' }}
-                onClick={() => onCheckStatus?.('chatgpt')}
-                title="Probe DOM status"
-              >
-                🔄
-              </button>
-            </div>
-          </div>
 
-          {/* Provider 2: Gemini */}
-          <div className="webview-slot">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <strong style={{ color: 'var(--accent-gemini)' }}>Gemini</strong>
-              <span className={`badge-session status-${session.providerStates.gemini.status}`}>
-                {session.providerStates.gemini.status.replace(/_/g, ' ')}
-              </span>
+            {/* Provider 2: Gemini */}
+            <div className="webview-slot">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <strong style={{ color: 'var(--accent-gemini)' }}>Gemini</strong>
+                <span className={`badge-session status-${session.providerStates.gemini.status}`}>
+                  {session.providerStates.gemini.status.replace(/_/g, ' ')}
+                </span>
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                Session: persist:gemini
+              </div>
+              <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '10px', padding: '3px 6px', flex: 1 }}
+                  onClick={() => onOpenLogin?.('gemini')}
+                >
+                  Open Session
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '10px', padding: '3px 6px' }}
+                  onClick={() => onCheckStatus?.('gemini')}
+                  title="Check session status"
+                >
+                  ↻
+                </button>
+              </div>
             </div>
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-              Partition: persist:ai-provider-gemini
-            </div>
-            <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ fontSize: '10px', padding: '3px 6px', flex: 1 }}
-                onClick={() => onOpenLogin?.('gemini')}
-              >
-                🖥 Show / Login
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ fontSize: '10px', padding: '3px 6px' }}
-                onClick={() => onCheckStatus?.('gemini')}
-                title="Probe DOM status"
-              >
-                🔄
-              </button>
-            </div>
-          </div>
 
-          {/* Provider 3: DeepSeek */}
-          <div className="webview-slot">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <strong style={{ color: 'var(--accent-deepseek)' }}>DeepSeek</strong>
-              <span className={`badge-session status-${session.providerStates.deepseek.status}`}>
-                {session.providerStates.deepseek.status.replace(/_/g, ' ')}
-              </span>
+            {/* Provider 3: DeepSeek */}
+            <div className="webview-slot">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <strong style={{ color: 'var(--accent-deepseek)' }}>DeepSeek</strong>
+                <span className={`badge-session status-${session.providerStates.deepseek.status}`}>
+                  {session.providerStates.deepseek.status.replace(/_/g, ' ')}
+                </span>
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                Session: persist:deepseek
+              </div>
+              <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '10px', padding: '3px 6px', flex: 1 }}
+                  onClick={() => onOpenLogin?.('deepseek')}
+                >
+                  Open Session
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '10px', padding: '3px 6px' }}
+                  onClick={() => onCheckStatus?.('deepseek')}
+                  title="Check session status"
+                >
+                  ↻
+                </button>
+              </div>
             </div>
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-              Partition: persist:ai-provider-deepseek
-            </div>
-            <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ fontSize: '10px', padding: '3px 6px', flex: 1 }}
-                onClick={() => onOpenLogin?.('deepseek')}
-              >
-                🖥 Show / Login
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ fontSize: '10px', padding: '3px 6px' }}
-                onClick={() => onCheckStatus?.('deepseek')}
-                title="Probe DOM status"
-              >
-                🔄
-              </button>
-            </div>
-          </div>
 
-          {/* Provider 4: Claude */}
-          <div className="webview-slot">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <strong style={{ color: 'var(--accent-claude)' }}>Claude</strong>
-              <span className={`badge-session status-${session.providerStates.claude.status}`}>
-                {session.providerStates.claude.status.replace(/_/g, ' ')}
-              </span>
-            </div>
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-              ⚡ Quota Guard Enabled
-            </div>
-            <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ fontSize: '10px', padding: '3px 6px', flex: 1 }}
-                onClick={() => onOpenLogin?.('claude')}
-              >
-                🖥 Show / Login
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ fontSize: '10px', padding: '3px 6px' }}
-                onClick={() => onCheckStatus?.('claude')}
-                title="Probe DOM status"
-              >
-                🔄
-              </button>
+            {/* Provider 4: Claude */}
+            <div className="webview-slot">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <strong style={{ color: 'var(--accent-claude)' }}>Claude</strong>
+                <span className={`badge-session status-${session.providerStates.claude.status}`}>
+                  {session.providerStates.claude.status.replace(/_/g, ' ')}
+                </span>
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                Quota Guard Enabled
+              </div>
+              <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '10px', padding: '3px 6px', flex: 1 }}
+                  onClick={() => onOpenLogin?.('claude')}
+                >
+                  Open Session
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '10px', padding: '3px 6px' }}
+                  onClick={() => onCheckStatus?.('claude')}
+                  title="Check session status"
+                >
+                  ↻
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </footer>
     </section>
   );

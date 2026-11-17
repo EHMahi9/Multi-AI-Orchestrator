@@ -49,6 +49,26 @@ export const App: React.FC = () => {
   const [logs, setLogs] = useState<string>('');
   const [glossaryOpen, setGlossaryOpen] = useState<boolean>(false);
   const [glossaryTermId, setGlossaryTermId] = useState<string | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      return (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    } catch {
+      // ignore
+    }
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   useEffect(() => {
     // Connect to Electron IPC if running inside Electron desktop container
@@ -197,6 +217,8 @@ export const App: React.FC = () => {
     <>
       <Titlebar
         session={session}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
         onOpenLogin={handleOpenLogin}
         onClearSession={handleClearSession}
         onToggleShowcase={handleToggleShowcase}
