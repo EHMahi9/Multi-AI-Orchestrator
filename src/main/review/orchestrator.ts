@@ -127,7 +127,7 @@ export class ReviewOrchestrator {
         continue;
       }
 
-      const sessionState = providerManager.getStatus(providerId);
+      const sessionState = await providerManager.checkStatus(providerId);
       if (sessionState.status !== 'ready') {
         onLog(`[Review ${providerId}] Session not ready (status: ${sessionState.status}). Skipping.\n`);
         failedProviders.push(providerId);
