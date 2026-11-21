@@ -7,6 +7,7 @@ import { ProviderSessionManager } from './providers/manager';
 import { ConsensusOrchestrator } from './consensus/orchestrator';
 import { ExecutionService } from './execution/engine';
 import { LoopController } from './review/loop-controller';
+import { AntigravityBridge } from './bridge/antigravity-bridge';
 import { computeDecisionPacketHash } from '../shared/schema';
 import type { AppMetadata, OrchestratorSessionState, ProviderId, ProviderState } from '../shared/types';
 
@@ -15,6 +16,7 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const providerManager = new ProviderSessionManager();
 const executionService = new ExecutionService();
 const loopController = new LoopController();
+const antigravityBridge = new AntigravityBridge(process.cwd());
 let currentOrchestrator: ConsensusOrchestrator | null = null;
 
 // Initial session state
@@ -68,6 +70,36 @@ function broadcastLog(chunk: string): void {
     mainWindow.webContents.send('pipeline:log-chunk', chunk);
   }
 }
+
+// Auto-route evidence submitted by Antigravity directly to multi-AI review loop
+antigravityBridge.on('evidence:submitted', async (evidenceData) => {
+  broadcastLog(`\n[Antigravity Bridge] New execution evidence received from Antigravity agent!\n`);
+  broadcastLog(`[Evidence Summary] Exit Code: ${evidenceData.exitCode}, Success: ${evidenceData.success}, Changed Files: ${(evidenceData.changedFiles || []).join(', ')}\n`);
+
+  sessionState.stage = 'reviewing';
+  sessionState.running = true;
+  broadcastState();
+
+  try {
+    const result = await loopController.processExternalEvidence(evidenceData);
+    if (result.consensus) {
+      antigravityBridge.publishReviewVerdict(result.consensus, sessionState.reviewIteration);
+      if (result.consensus.verdict === 'REVISION_REQUIRED' && loopController.getActiveProposal()) {
+        antigravityBridge.publishCorrection(loopController.getActiveProposal()!);
+        broadcastLog(`[Antigravity Bridge] Revision required by ChatGPT/reviewers. Published correction proposal for Antigravity.\n`);
+      } else if (result.consensus.verdict === 'PASS') {
+        broadcastLog(`[Antigravity Bridge] All criteria verified and passed! Task marked complete.\n`);
+      }
+    }
+    sessionState.stage = result.stage;
+    sessionState.running = false;
+    broadcastState();
+  } catch (err: any) {
+    broadcastLog(`[Bridge Review Error] ${err.message}\n`);
+    sessionState.running = false;
+    broadcastState();
+  }
+});
 
 // Preflight check for local agent CLI (detects gemini or agy)
 function detectAgentCli(): Promise<{ name: string; version: string; available: boolean }> {
@@ -321,6 +353,8 @@ ipcMain.handle('pipeline:approve-packet', async () => {
     broadcastLog(`\n[Decision Packet Approved] User confirmed architecture and tasks.\n`);
     broadcastLog(`[Security Fingerprint] SHA-256: ${sessionState.decisionPacket.approvalSignature}\n`);
     broadcastLog(`[Milestone 4 Engine Ready] User may now click "Run Approved Tasks" to trigger local agent execution.\n`);
+    antigravityBridge.publishApprovedTask(sessionState.decisionPacket);
+    broadcastLog(`[Antigravity Bridge] Approved task published to .orchestrator/bridge/pending_task.json for Antigravity Agent.\n`);
     return { ok: true };
   }
   return { ok: false, error: 'No Decision Packet available to approve.' };
@@ -400,6 +434,11 @@ ipcMain.handle('execution:run-approved', async () => {
 ipcMain.handle('execution:approve-correction', async () => {
   sessionState.running = true;
   broadcastState();
+
+  if (loopController.getActiveProposal()) {
+    antigravityBridge.publishCorrection(loopController.getActiveProposal()!);
+    broadcastLog(`[Antigravity Bridge] Published approved correction proposal to bridge for Antigravity Agent.\n`);
+  }
 
   (async () => {
     try {

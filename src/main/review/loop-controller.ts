@@ -11,6 +11,7 @@ import type {
   CollectedEvidence,
   CorrectionProposal,
   DecisionPacket,
+  ExecutionEvidence,
   IterationRecord,
   LoopRunReport,
   PipelineStage,
@@ -339,6 +340,132 @@ export class LoopController {
       return { ok: true, stage: 'cancelled', report };
     }
     return { ok: true, stage: 'cancelled' };
+  }
+
+  /**
+   * Processes external execution evidence submitted by an external agent (such as Google Antigravity),
+   * feeding the changes into the Multi-AI review cycle (ChatGPT, Gemini, DeepSeek, Claude).
+   */
+  public async processExternalEvidence(
+    executionEvidence: ExecutionEvidence,
+    startTime?: number
+  ): Promise<{ ok: boolean; stage: PipelineStage; error?: string; consensus?: ReviewConsensus; report?: LoopRunReport }> {
+    const options = this.activeOptions;
+    if (!options || !this.currentPacket) {
+      return { ok: false, stage: this.currentStage, error: 'No active loop run configured to receive external evidence.' };
+    }
+
+    const iter = this.currentIteration;
+    const packet = this.currentPacket;
+    const iterStartTime = startTime || Date.now() - (executionEvidence.durationMs || 5000);
+    const iterEndTime = Date.now();
+
+    options.onLog(`\n[Antigravity Bridge] Processing execution evidence from Antigravity agent (Iteration ${iter})...\n`);
+    this.transitionStage('collecting_evidence');
+
+    const cliInfo: CliInfo = {
+      name: 'antigravity-ide',
+      executablePath: 'internal-ide-agent',
+      version: 'gemini-agent',
+      available: true,
+    };
+
+    const collectedEvidence = this.evidenceCollector.collect({
+      runId: this.runId,
+      iteration: iter,
+      packet,
+      cliInfo,
+      evidence: executionEvidence,
+      workspace: options.workspace,
+      startTime: iterStartTime,
+      endTime: iterEndTime,
+      preGitStatus: [],
+      postGitStatus: executionEvidence.changedFiles || [],
+    });
+
+    options.onStateUpdate?.({
+      iteration: iter,
+      evidence: collectedEvidence,
+      consensus: null,
+      proposal: null,
+    });
+
+    // Multi-AI Review & Consensus
+    this.transitionStage('reviewing');
+    options.onLog(`[Multi-AI Review] Presenting Antigravity code changes and test output to AI Reviewers...\n`);
+
+    const consensus = await this.reviewOrchestrator.reviewExecution({
+      packet,
+      evidence: collectedEvidence,
+      selectedProviders: options.selectedProviders,
+      providerManager: options.providerManager,
+      mockReviews: options.mockReviews,
+      onLog: options.onLog,
+    });
+
+    options.onStateUpdate?.({
+      iteration: iter,
+      evidence: collectedEvidence,
+      consensus,
+      proposal: null,
+    });
+
+    const record: IterationRecord = {
+      iteration: iter,
+      evidence: collectedEvidence,
+      consensus,
+      durationMs: iterEndTime - iterStartTime,
+    };
+    this.iterationHistory.push(record);
+
+    if (consensus.verdict === 'PASS') {
+      this.transitionStage('completed');
+      this.isRunning = false;
+      options.onLog(`\n🎉 [Consensus PASS] ChatGPT and AI reviewers verified all criteria! Execution succeeded.\n`);
+      const report = this.finalizeReport('PASS');
+      return { ok: true, stage: 'completed', consensus, report };
+    }
+
+    if (consensus.verdict === 'BLOCKED') {
+      this.transitionStage('blocked');
+      this.isRunning = false;
+      options.onLog(`\n⛔ [Consensus BLOCKED] Review blocked continuation: ${consensus.rationale}\n`);
+      const report = this.finalizeReport('BLOCKED');
+      return { ok: false, stage: 'blocked', consensus, error: consensus.rationale, report };
+    }
+
+    // Verdict is REVISION_REQUIRED
+    if (iter >= this.maxIterations) {
+      this.transitionStage('revision_limit_reached');
+      this.isRunning = false;
+      options.onLog(`\n🛑 [Revision Limit Reached] Reached maximum correction limit (${this.maxIterations}). Stopping loop.\n`);
+      const report = this.finalizeReport('REVISION_LIMIT_REACHED');
+      return { ok: false, stage: 'revision_limit_reached', consensus, error: 'Maximum correction limit reached.', report };
+    }
+
+    const nextIteration = iter + 1;
+    this.currentIteration = nextIteration;
+    options.onLog(`[Correction Planner] Formulating revision proposal for iteration ${nextIteration} based on reviewer feedback...\n`);
+
+    const proposal = this.correctionPlanner.planCorrection({
+      iteration: nextIteration,
+      originalPacket: packet,
+      consensus,
+      evidence: collectedEvidence,
+    });
+
+    this.activeProposal = proposal;
+    record.correctionProposal = proposal;
+    this.transitionStage('awaiting_correction_approval');
+
+    options.onStateUpdate?.({
+      iteration: nextIteration,
+      evidence: collectedEvidence,
+      consensus,
+      proposal,
+    });
+
+    return { ok: true, stage: 'awaiting_correction_approval', consensus };
   }
 
   private transitionStage(newStage: PipelineStage): void {
