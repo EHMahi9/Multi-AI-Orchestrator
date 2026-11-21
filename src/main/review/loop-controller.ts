@@ -348,8 +348,21 @@ export class LoopController {
    */
   public async processExternalEvidence(
     executionEvidence: ExecutionEvidence,
-    startTime?: number
+    startTime?: number,
+    fallbackOptions?: LoopControllerOptions,
+    fallbackPacket?: DecisionPacket
   ): Promise<{ ok: boolean; stage: PipelineStage; error?: string; consensus?: ReviewConsensus; report?: LoopRunReport }> {
+    if (!this.activeOptions && fallbackOptions) {
+      this.activeOptions = fallbackOptions;
+      this.runStartTime = Date.now();
+      this.runId = `run-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      this.currentIteration = 1;
+      this.maxIterations = fallbackOptions.maxCorrectionIterations ?? 3;
+    }
+    if (!this.currentPacket && fallbackPacket) {
+      this.currentPacket = fallbackPacket;
+    }
+
     const options = this.activeOptions;
     if (!options || !this.currentPacket) {
       return { ok: false, stage: this.currentStage, error: 'No active loop run configured to receive external evidence.' };

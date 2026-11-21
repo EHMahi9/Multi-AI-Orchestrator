@@ -30,6 +30,7 @@ export class AntigravityBridge extends EventEmitter {
   private statusFile: string;
   private watcher: fs.FSWatcher | null = null;
   private isProcessingEvidence = false;
+  private lastProcessedTimestamp = 0;
 
   constructor(workspaceDir: string) {
     super();
@@ -194,21 +195,28 @@ export class AntigravityBridge extends EventEmitter {
     try {
       this.watcher = fs.watch(this.bridgeDir, (eventType, filename) => {
         if (filename === 'evidence.json') {
-          this.handleEvidenceFileChange();
+          this.checkForEvidence();
         }
       });
     } catch {
-      // Fallback polling if fs.watch fails on certain Windows configs
-      setInterval(() => {
-        this.checkForEvidence();
-      }, 2000);
+      // Ignore watch failure
     }
+
+    // Windows fallback polling interval (guarantees detection across filesystem drivers)
+    setInterval(() => {
+      this.checkForEvidence();
+    }, 1500);
   }
 
   private checkForEvidence(): void {
-    if (fs.existsSync(this.evidenceFile) && !this.isProcessingEvidence) {
-      this.handleEvidenceFileChange();
-    }
+    if (!fs.existsSync(this.evidenceFile) || this.isProcessingEvidence) return;
+    try {
+      const stats = fs.statSync(this.evidenceFile);
+      if (stats.mtimeMs > this.lastProcessedTimestamp) {
+        this.lastProcessedTimestamp = stats.mtimeMs;
+        this.handleEvidenceFileChange();
+      }
+    } catch {}
   }
 
   private handleEvidenceFileChange(): void {
